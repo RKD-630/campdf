@@ -139,19 +139,28 @@
     <!-- Canvas area -->
     <div class="canvas-wrapper" id="canvasWrapper">
       <canvas id="editCanvas"></canvas>
-      <!-- Crop overlay -->
+      <!-- 4-Corner Perspective Crop overlay -->
       <div id="cropOverlay" class="crop-overlay hidden">
-        <div class="crop-mask top"></div>
-        <div class="crop-mask bottom"></div>
-        <div class="crop-mask left"></div>
-        <div class="crop-mask right"></div>
-        <div class="crop-box" id="cropBox">
-          <div class="crop-handle nw" data-dir="nw"></div>
-          <div class="crop-handle ne" data-dir="ne"></div>
-          <div class="crop-handle sw" data-dir="sw"></div>
-          <div class="crop-handle se" data-dir="se"></div>
-          <div class="crop-grid"></div>
-        </div>
+        <svg id="cropSVG" class="crop-svg">
+          <defs>
+            <mask id="cropMask">
+              <rect id="maskBg" fill="white" x="0" y="0" width="100%" height="100%"/>
+              <polygon id="maskPoly" fill="black"/>
+            </mask>
+          </defs>
+          <rect id="darkRect" fill="rgba(0,0,0,0.62)" mask="url(#cropMask)" x="0" y="0" width="100%" height="100%"/>
+          <polygon id="cropBorder" fill="none" stroke="#00D4FF" stroke-width="2"/>
+          <!-- rule-of-thirds lines inside selection -->
+          <line id="g1" stroke="rgba(0,212,255,.3)" stroke-width="1"/>
+          <line id="g2" stroke="rgba(0,212,255,.3)" stroke-width="1"/>
+          <line id="g3" stroke="rgba(0,212,255,.3)" stroke-width="1"/>
+          <line id="g4" stroke="rgba(0,212,255,.3)" stroke-width="1"/>
+          <!-- Corner handles: tl=1, tr=2, br=3, bl=4 -->
+          <g class="ch" id="chTL" data-c="tl"><circle r="22" class="ch-hit"/><circle r="9" class="ch-ring"/><circle r="5" class="ch-dot"/><text class="ch-lbl" dy="4">1</text></g>
+          <g class="ch" id="chTR" data-c="tr"><circle r="22" class="ch-hit"/><circle r="9" class="ch-ring"/><circle r="5" class="ch-dot"/><text class="ch-lbl" dy="4">2</text></g>
+          <g class="ch" id="chBR" data-c="br"><circle r="22" class="ch-hit"/><circle r="9" class="ch-ring"/><circle r="5" class="ch-dot"/><text class="ch-lbl" dy="4">3</text></g>
+          <g class="ch" id="chBL" data-c="bl"><circle r="22" class="ch-hit"/><circle r="9" class="ch-ring"/><circle r="5" class="ch-dot"/><text class="ch-lbl" dy="4">4</text></g>
+        </svg>
       </div>
       <!-- Text overlay layer -->
       <div id="textLayer" class="text-layer"></div>

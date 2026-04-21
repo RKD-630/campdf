@@ -97,21 +97,22 @@ html,body{height:100%;width:100%;overflow:hidden;background:#0b0b1a;color:#e8e8f
 .icon-btn.accent{background:var(--accent-grad);border-color:transparent;color:#fff;}
 .icon-btn:active{transform:scale(.96);}
 
-.canvas-wrapper{flex:1;position:relative;overflow:hidden;background:#111;display:flex;align-items:center;justify-content:center;}
+.canvas-wrapper{flex:1;position:relative;overflow:visible;background:#111;display:flex;align-items:center;justify-content:center;}
 #editCanvas{max-width:100%;max-height:100%;display:block;}
-.text-layer{position:absolute;inset:0;pointer-events:none;}
+.text-layer{position:absolute;pointer-events:none;top:0;left:0;width:100%;height:100%;}
 
-/* Crop overlay */
-.crop-overlay{position:absolute;inset:0;}
+/* Crop overlay – JS positions it to exactly cover the canvas */
+.crop-overlay{position:absolute;pointer-events:none;box-sizing:border-box;}
 .crop-overlay.hidden{display:none;}
-.crop-mask{position:absolute;background:rgba(0,0,0,.55);}
-.crop-box{position:absolute;border:2px solid var(--accent2);cursor:move;}
-.crop-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.15) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.15) 1px,transparent 1px);background-size:33.33% 33.33%;}
-.crop-handle{position:absolute;width:18px;height:18px;background:var(--accent2);border-radius:3px;cursor:pointer;}
-.crop-handle.nw{top:-9px;left:-9px;cursor:nw-resize;}
-.crop-handle.ne{top:-9px;right:-9px;cursor:ne-resize;}
-.crop-handle.sw{bottom:-9px;left:-9px;cursor:sw-resize;}
-.crop-handle.se{bottom:-9px;right:-9px;cursor:se-resize;}
+.crop-svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;}
+/* Corner handle groups */
+.ch{cursor:crosshair;pointer-events:all;touch-action:none;}
+.ch-hit{fill:transparent;}
+.ch-ring{fill:none;stroke:#00D4FF;stroke-width:2.5;}
+.ch-dot{fill:#00D4FF;}
+.ch-lbl{fill:#fff;font-size:9px;font-weight:700;text-anchor:middle;pointer-events:none;font-family:'Inter',sans-serif;}
+.ch.active .ch-dot{fill:#fff;r:7px;}
+.ch.active .ch-ring{stroke:#fff;}
 
 /* Tool Tabs */
 .tool-tabs{display:flex;background:var(--bg1);border-top:1px solid var(--border);padding:6px;}
