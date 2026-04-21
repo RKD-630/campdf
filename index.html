@@ -1,0 +1,75 @@
+<!DOCTYPE html><html lang="en"><head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>DocScan PDF Converter</title>
+  
+<link rel="stylesheet" href="style.css" /></head>
+<body>
+
+  <!-- HOME SCREEN -->
+  <div id="home" class="screen active">
+    <h1>📄 DocScan PDF</h1>
+    <p style="color:var(--text-muted); margin-bottom: 8px;">Scan, edit &amp; convert documents to PDF instantly on your device.</p>
+    <button class="btn" onclick="startCamera()">📷 Scan Document</button>
+    <button class="btn secondary" onclick="document.getElementById('gallery-input').click()">🖼️ Import from Gallery</button>
+    <input type="file" id="gallery-input" accept="image/*" multiple="" class="hidden" onchange="handleGallery(this.files)" />
+  </div>
+
+  <!-- CAMERA SCREEN -->
+  <div id="camera-view" class="screen">
+    <video id="camera-feed" autoplay="" playsinline="" muted=""></video>
+    <div class="crop-box" id="crop-box">
+      <div class="crop-handle top-left" data-corner="tl"></div>
+      <div class="crop-handle top-right" data-corner="tr"></div>
+      <div class="crop-handle bottom-left" data-corner="bl"></div>
+      <div class="crop-handle bottom-right" data-corner="br"></div>
+    </div>
+    <div class="toolbar">
+      <button class="btn secondary" onclick="stopCamera()" style="width:auto; padding:10px 16px;">✖ Cancel</button>
+      <button class="btn" onclick="captureImage()" style="width:auto; padding:10px 24px;">📸 Capture</button>
+    </div>
+  </div>
+
+  <!-- EDITOR SCREEN -->
+  <div id="editor-view" class="screen">
+    <canvas id="preview-canvas"></canvas>
+    <div class="page-count" id="page-count">1 Page</div>
+    <div class="toolbar" id="edit-toolbar">
+      <div class="slider-group">
+        <label>Brightness</label>
+        <input type="range" id="brightness" min="-50" max="50" value="0" oninput="applyFilters()" />
+      </div>
+      <div class="slider-group">
+        <label>Contrast</label>
+        <input type="range" id="contrast" min="-50" max="50" value="0" oninput="applyFilters()" />
+      </div>
+      <div class="slider-group">
+        <label>Sharpness</label>
+        <input type="range" id="sharpness" min="0" max="100" value="0" oninput="applyFilters()" />
+      </div>
+      <div class="slider-group">
+        <label>Text Clarity</label>
+        <input type="range" id="threshold" min="0" max="255" value="128" oninput="applyFilters()" />
+      </div>
+      <div class="slider-group">
+        <label>Text Color</label>
+        <input type="color" id="text-color" value="#000000" class="color-btn" oninput="applyFilters()" />
+      </div>
+      <div class="slider-group">
+        <label>BG Color</label>
+        <input type="color" id="bg-color" value="#ffffff" class="color-btn" oninput="applyFilters()" />
+      </div>
+    </div>
+    <div class="action-bar">
+      <button class="btn secondary" onclick="addPage()">➕ Add Page</button>
+      <button class="btn" onclick="convertToPDF()">💾 Convert &amp; Download</button>
+    </div>
+  </div>
+
+  <div class="loading hidden" id="loading">Processing...</div>
+  <div class="toast" id="toast"></div>
+
+  
+  
+
+<script src="script.js"></script></body></html>

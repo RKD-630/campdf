@@ -1,0 +1,64 @@
+:root {
+      --primary: #2563eb;
+      --danger: #ef4444;
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    body { background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+    
+    /* Screens */
+    .screen { display: none; flex: 1; flex-direction: column; padding: 16px; position: relative; }
+    .screen.active { display: flex; }
+    
+    /* Home */
+    #home { align-items: center; justify-content: center; text-align: center; gap: 24px; }
+    .btn {
+      background: var(--primary); color: white; border: none; padding: 16px 28px; border-radius: var(--radius);
+      font-size: 16px; font-weight: 500; cursor: pointer; width: 100%; max-width: 320px; touch-action: manipulation;
+      display: flex; align-items: center; justify-content: center; gap: 10px; transition: opacity 0.2s;
+    }
+    .btn:active { opacity: 0.8; }
+    .btn.secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+    .btn.danger { background: var(--danger); }
+    
+    /* Camera & Preview */
+    #camera-view, #editor-view { position: relative; height: 100%; background: #000; }
+    video, canvas { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+    
+    /* Crop Tool */
+    .crop-box {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      width: 80%; height: 60%; border: 2px dashed rgba(255,255,255,0.8); pointer-events: auto;
+    }
+    .crop-handle {
+      position: absolute; width: 24px; height: 24px; background: var(--primary); border: 2px solid white; border-radius: 50%;
+      cursor: move; touch-action: none; z-index: 10;
+    }
+    .crop-handle.top-left { top: -12px; left: -12px; }
+    .crop-handle.top-right { top: -12px; right: -12px; }
+    .crop-handle.bottom-left { bottom: -12px; left: -12px; }
+    .crop-handle.bottom-right { bottom: -12px; right: -12px; }
+    
+    /* Controls */
+    .toolbar {
+      position: absolute; bottom: 0; left: 0; width: 100%; background: var(--surface); padding: 12px 16px;
+      border-top: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: center;
+    }
+    .slider-group { display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 80px; }
+    .slider-group label { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
+    input[type="range"] { width: 100%; accent-color: var(--primary); }
+    .color-btn { width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--border); cursor: pointer; }
+    
+    /* Page Manager */
+    .page-count { position: absolute; top: 12px; left: 12px; background: rgba(0,0,0,0.6); color: white; padding: 6px 12px; border-radius: 20px; font-size: 13px; }
+    .action-bar { display: flex; gap: 10px; margin-top: 12px; width: 100%; }
+    .hidden { display: none !important; }
+    .loading { position: absolute; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; color: white; z-index: 100; }
+    .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #334155; color: white; padding: 10px 16px; border-radius: 8px; font-size: 14px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 200; }
+    .toast.show { opacity: 1; }
