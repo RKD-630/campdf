@@ -1,75 +1,319 @@
-<!DOCTYPE html><html lang="en"><head>
+<!DOCTYPE html>
+<html lang="en">
+<head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>DocScan PDF Converter</title>
-  
-<link rel="stylesheet" href="style.css" /></head>
+  <meta name="description" content="DocScan Pro – Scan documents with your mobile camera, auto-crop, adjust, and export as PDF instantly." />
+  <title>DocScan Pro – Document to PDF Converter</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
 <body>
 
-  <!-- HOME SCREEN -->
-  <div id="home" class="screen active">
-    <h1>📄 DocScan PDF</h1>
-    <p style="color:var(--text-muted); margin-bottom: 8px;">Scan, edit &amp; convert documents to PDF instantly on your device.</p>
-    <button class="btn" onclick="startCamera()">📷 Scan Document</button>
-    <button class="btn secondary" onclick="document.getElementById('gallery-input').click()">🖼️ Import from Gallery</button>
-    <input type="file" id="gallery-input" accept="image/*" multiple="" class="hidden" onchange="handleGallery(this.files)" />
+<!-- ═══════════════════ SPLASH SCREEN ═══════════════════ -->
+<div id="splash" class="splash">
+  <div class="splash-inner">
+    <div class="logo-ring">
+      <svg viewBox="0 0 80 80" fill="none">
+        <circle cx="40" cy="40" r="36" stroke="url(#lg1)" stroke-width="4"/>
+        <path d="M24 28h20l8 8v16H24V28z" fill="url(#lg2)" opacity=".9"/>
+        <path d="M44 28v8h8" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+        <path d="M29 40h22M29 45h16M29 35h10" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>
+        <defs>
+          <linearGradient id="lg1" x1="0" y1="0" x2="80" y2="80" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#7B5EA7"/><stop offset="1" stop-color="#00D4FF"/>
+          </linearGradient>
+          <linearGradient id="lg2" x1="24" y1="28" x2="56" y2="52" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#7B5EA7"/><stop offset="1" stop-color="#4FC3F7"/>
+          </linearGradient>
+        </defs>
+      </svg>
+    </div>
+    <h1 class="splash-title">DocScan <span>Pro</span></h1>
+    <p class="splash-sub">Scan · Crop · Adjust · PDF</p>
+    <div class="splash-loader"><span></span><span></span><span></span></div>
   </div>
+</div>
 
-  <!-- CAMERA SCREEN -->
-  <div id="camera-view" class="screen">
-    <video id="camera-feed" autoplay="" playsinline="" muted=""></video>
-    <div class="crop-box" id="crop-box">
-      <div class="crop-handle top-left" data-corner="tl"></div>
-      <div class="crop-handle top-right" data-corner="tr"></div>
-      <div class="crop-handle bottom-left" data-corner="bl"></div>
-      <div class="crop-handle bottom-right" data-corner="br"></div>
+<!-- ═══════════════════ APP ROOT ═══════════════════ -->
+<div id="app" class="app hidden">
+
+  <!-- ── TOP HEADER ── -->
+  <header class="app-header">
+    <div class="header-logo">
+      <svg width="28" height="28" viewBox="0 0 80 80" fill="none">
+        <circle cx="40" cy="40" r="36" stroke="url(#hLg)" stroke-width="5"/>
+        <path d="M24 28h20l8 8v16H24V28z" fill="url(#hLg2)"/>
+        <path d="M44 28v8h8" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+        <path d="M29 40h22M29 45h16M29 35h10" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>
+        <defs>
+          <linearGradient id="hLg" x1="0" y1="0" x2="80" y2="80" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#7B5EA7"/><stop offset="1" stop-color="#00D4FF"/>
+          </linearGradient>
+          <linearGradient id="hLg2" x1="24" y1="28" x2="56" y2="52" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#9B7EC8"/><stop offset="1" stop-color="#4FC3F7"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <span>DocScan <b>Pro</b></span>
     </div>
-    <div class="toolbar">
-      <button class="btn secondary" onclick="stopCamera()" style="width:auto; padding:10px 16px;">✖ Cancel</button>
-      <button class="btn" onclick="captureImage()" style="width:auto; padding:10px 24px;">📸 Capture</button>
+    <div class="header-actions">
+      <button id="btnPages" class="hdr-btn" title="View pages">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        <span class="page-badge" id="pageBadge">0</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ══════════════════════════════════════════════════════
+        SCREEN 1 – HOME (camera / gallery)
+  ══════════════════════════════════════════════════════ -->
+  <section id="screenHome" class="screen active">
+    <div class="home-hero">
+      <div class="hero-graphic">
+        <div class="camera-outline">
+          <div class="cam-corner tl"></div><div class="cam-corner tr"></div>
+          <div class="cam-corner bl"></div><div class="cam-corner br"></div>
+          <div class="scan-line"></div>
+        </div>
+        <p class="hero-label">Point camera at a document</p>
+      </div>
+    </div>
+    <div class="home-actions">
+      <button id="btnCamera" class="action-btn primary">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        Scan with Camera
+      </button>
+      <button id="btnGallery" class="action-btn secondary">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        Import from Gallery
+      </button>
+      <input type="file" id="galleryInput" accept="image/*" multiple hidden />
+    </div>
+    <div id="pdfReadyBanner" class="pdf-ready-banner hidden">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      PDF ready! Tap download or continue scanning.
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════
+        SCREEN 2 – CAMERA VIEWFINDER
+  ══════════════════════════════════════════════════════ -->
+  <section id="screenCamera" class="screen">
+    <div class="viewfinder-wrap">
+      <video id="cameraVideo" autoplay playsinline muted></video>
+      <canvas id="overlayCanvas" class="overlay-canvas"></canvas>
+      <div class="doc-detect-ring" id="detectRing"></div>
+      <div class="vf-corners">
+        <div class="vf-c tl"></div><div class="vf-c tr"></div>
+        <div class="vf-c bl"></div><div class="vf-c br"></div>
+      </div>
+      <div class="detect-label" id="detectLabel">Searching for document…</div>
+    </div>
+    <div class="cam-toolbar">
+      <button id="btnCamClose" class="cam-ctrl ghost">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+      <button id="btnCapture" class="capture-btn">
+        <span class="capture-inner"></span>
+      </button>
+      <button id="btnFlash" class="cam-ctrl ghost" title="Flash">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      </button>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════
+        SCREEN 3 – EDIT (crop + adjustments)
+  ══════════════════════════════════════════════════════ -->
+  <section id="screenEdit" class="screen">
+    <div class="edit-header">
+      <button id="btnEditBack" class="icon-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <span class="edit-title">Adjust Document</span>
+      <button id="btnAddToDoc" class="icon-btn accent">Done</button>
+    </div>
+
+    <!-- Canvas area -->
+    <div class="canvas-wrapper" id="canvasWrapper">
+      <canvas id="editCanvas"></canvas>
+      <!-- Crop overlay -->
+      <div id="cropOverlay" class="crop-overlay hidden">
+        <div class="crop-mask top"></div>
+        <div class="crop-mask bottom"></div>
+        <div class="crop-mask left"></div>
+        <div class="crop-mask right"></div>
+        <div class="crop-box" id="cropBox">
+          <div class="crop-handle nw" data-dir="nw"></div>
+          <div class="crop-handle ne" data-dir="ne"></div>
+          <div class="crop-handle sw" data-dir="sw"></div>
+          <div class="crop-handle se" data-dir="se"></div>
+          <div class="crop-grid"></div>
+        </div>
+      </div>
+      <!-- Text overlay layer -->
+      <div id="textLayer" class="text-layer"></div>
+    </div>
+
+    <!-- Tool tabs -->
+    <div class="tool-tabs">
+      <button class="tab-btn active" data-tab="adjust">Adjust</button>
+      <button class="tab-btn" data-tab="crop">Crop</button>
+      <button class="tab-btn" data-tab="text">Text</button>
+    </div>
+
+    <!-- ADJUST panel -->
+    <div id="panelAdjust" class="tool-panel active">
+      <div class="sliders-grid">
+        <div class="slider-item">
+          <label>Brightness <span id="valBrightness">0</span></label>
+          <input type="range" id="slBrightness" min="-100" max="100" value="0" class="styled-range" />
+        </div>
+        <div class="slider-item">
+          <label>Contrast <span id="valContrast">0</span></label>
+          <input type="range" id="slContrast" min="-100" max="100" value="0" class="styled-range" />
+        </div>
+        <div class="slider-item">
+          <label>Darkness <span id="valDarkness">0</span></label>
+          <input type="range" id="slDarkness" min="0" max="100" value="0" class="styled-range" />
+        </div>
+        <div class="slider-item">
+          <label>Sharpness <span id="valSharpness">0</span></label>
+          <input type="range" id="slSharpness" min="0" max="10" value="0" class="styled-range" />
+        </div>
+      </div>
+      <div class="preset-chips">
+        <button class="chip" onclick="applyPreset('original')">Original</button>
+        <button class="chip" onclick="applyPreset('magic')">Magic Color</button>
+        <button class="chip" onclick="applyPreset('grayscale')">Grayscale</button>
+        <button class="chip" onclick="applyPreset('bw')">B&W</button>
+        <button class="chip" onclick="applyPreset('enhance')">Enhance</button>
+      </div>
+    </div>
+
+    <!-- CROP panel -->
+    <div id="panelCrop" class="tool-panel">
+      <div class="crop-actions">
+        <button class="crop-btn" id="btnCropToggle">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 2 6 8 2 8"/><polyline points="18 22 18 16 22 16"/><path d="M2 8h14a2 2 0 0 1 2 2v10"/><path d="M22 16H8a2 2 0 0 1-2-2V2"/></svg>
+          Manual Crop
+        </button>
+        <button class="crop-btn" id="btnAutoCrop">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          Auto Detect
+        </button>
+        <button class="crop-btn" id="btnRotate">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+          Rotate 90°
+        </button>
+        <button class="crop-btn accent" id="btnApplyCrop">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          Apply Crop
+        </button>
+      </div>
+    </div>
+
+    <!-- TEXT panel -->
+    <div id="panelText" class="tool-panel">
+      <div class="text-controls">
+        <input type="text" id="textInput" placeholder="Type your text…" class="text-input-field" />
+        <div class="text-row">
+          <div class="color-pick-wrap">
+            <label>Text</label>
+            <input type="color" id="colorText" value="#1a1a2e" class="color-pick" title="Text color" />
+          </div>
+          <div class="color-pick-wrap">
+            <label>BG</label>
+            <input type="color" id="colorTextBg" value="#ffffff" class="color-pick" title="Text background" />
+          </div>
+          <label class="toggle-wrap">
+            <input type="checkbox" id="chkTransparent" />
+            <span class="toggle-label">Transparent BG</span>
+          </label>
+        </div>
+        <div class="text-row">
+          <select id="fontFamily" class="sel-field">
+            <option value="Inter">Inter</option>
+            <option value="serif">Serif</option>
+            <option value="monospace">Monospace</option>
+            <option value="cursive">Cursive</option>
+          </select>
+          <input type="number" id="fontSize" value="20" min="8" max="120" class="num-field" />
+          <span class="unit-label">px</span>
+        </div>
+        <button id="btnAddText" class="action-btn primary sm">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Place Text
+        </button>
+        <p class="hint-text">Drag text boxes on the image to reposition.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════
+        SCREEN 4 – PAGE MANAGER
+  ══════════════════════════════════════════════════════ -->
+  <section id="screenPages" class="screen">
+    <div class="edit-header">
+      <button id="btnPagesBack" class="icon-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <span class="edit-title">Pages (<span id="pageCount">0</span>)</span>
+      <button id="btnDownloadPDF" class="icon-btn accent pdf-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        PDF
+      </button>
+    </div>
+    <div id="pagesGrid" class="pages-grid"></div>
+    <div class="pages-footer">
+      <button id="btnAddMorePages" class="action-btn secondary">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add More Pages
+      </button>
+    </div>
+  </section>
+
+</div><!-- /app -->
+
+<!-- ═══════════ MODALS ═══════════ -->
+<div id="modalPermission" class="modal-backdrop">
+  <div class="modal">
+    <div class="modal-icon cam-icon">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+    </div>
+    <h2>Camera Access</h2>
+    <p>DocScan Pro needs camera access to scan your documents. Your images stay on your device.</p>
+    <div class="modal-btns">
+      <button id="btnPermAllow" class="action-btn primary">Allow Access</button>
+      <button id="btnPermDeny" class="action-btn ghost">Not Now</button>
     </div>
   </div>
+</div>
 
-  <!-- EDITOR SCREEN -->
-  <div id="editor-view" class="screen">
-    <canvas id="preview-canvas"></canvas>
-    <div class="page-count" id="page-count">1 Page</div>
-    <div class="toolbar" id="edit-toolbar">
-      <div class="slider-group">
-        <label>Brightness</label>
-        <input type="range" id="brightness" min="-50" max="50" value="0" oninput="applyFilters()" />
-      </div>
-      <div class="slider-group">
-        <label>Contrast</label>
-        <input type="range" id="contrast" min="-50" max="50" value="0" oninput="applyFilters()" />
-      </div>
-      <div class="slider-group">
-        <label>Sharpness</label>
-        <input type="range" id="sharpness" min="0" max="100" value="0" oninput="applyFilters()" />
-      </div>
-      <div class="slider-group">
-        <label>Text Clarity</label>
-        <input type="range" id="threshold" min="0" max="255" value="128" oninput="applyFilters()" />
-      </div>
-      <div class="slider-group">
-        <label>Text Color</label>
-        <input type="color" id="text-color" value="#000000" class="color-btn" oninput="applyFilters()" />
-      </div>
-      <div class="slider-group">
-        <label>BG Color</label>
-        <input type="color" id="bg-color" value="#ffffff" class="color-btn" oninput="applyFilters()" />
-      </div>
+<div id="modalProgress" class="modal-backdrop hidden">
+  <div class="modal small">
+    <div class="progress-ring-wrap">
+      <svg class="progress-ring" viewBox="0 0 64 64">
+        <circle cx="32" cy="32" r="26" stroke="#1e1e3a" stroke-width="6" fill="none"/>
+        <circle id="progressCircle" cx="32" cy="32" r="26" stroke="url(#pLg)" stroke-width="6" fill="none"
+          stroke-linecap="round" stroke-dasharray="163" stroke-dashoffset="163"/>
+        <defs>
+          <linearGradient id="pLg" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#7B5EA7"/><stop offset="1" stop-color="#00D4FF"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <span class="progress-pct" id="progressPct">0%</span>
     </div>
-    <div class="action-bar">
-      <button class="btn secondary" onclick="addPage()">➕ Add Page</button>
-      <button class="btn" onclick="convertToPDF()">💾 Convert &amp; Download</button>
-    </div>
+    <p id="progressLabel">Generating PDF…</p>
   </div>
+</div>
 
-  <div class="loading hidden" id="loading">Processing...</div>
-  <div class="toast" id="toast"></div>
+<div id="toastContainer" class="toast-container"></div>
 
-  
-  
-
-<script src="script.js"></script></body></html>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
