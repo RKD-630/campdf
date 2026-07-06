@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Scanner - All Converter</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { margin: 0; padding: 0; background: #000; color: #fff; font-family: 'Inter', sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        .header { padding: 1.5rem 1rem; text-align: center; background: #1e293b; font-weight: 600; font-size: 1.2rem; border-bottom: 2px solid #6366f1; }
+        .camera-container { flex: 1; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        video { width: 100%; height: 100%; object-fit: cover; }
+        .controls { display: flex; justify-content: center; gap: 2rem; padding: 2rem; background: #0f172a; border-top: 1px solid #334155; }
+        
+        .btn-capture { width: 80px; height: 80px; border-radius: 50%; border: 4px solid white; background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
+        .inner-circle { width: 62px; height: 62px; border-radius: 50%; background: white; transition: 0.15s; }
+        .btn-capture:active .inner-circle { transform: scale(0.9); background: #8b5cf6; }
+        
+        .status-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); display: none; align-items:center; justify-content:center; flex-direction:column; z-index: 100; font-size: 1.5rem;}
+    </style>
+</head>
+<body>
+    <div class="header"><i class="fa-solid fa-mobile-screen"></i> Scan Document</div>
+    <div class="camera-container">
+        <video id="video" autoplay playsinline></video>
+    </div>
+    <div class="controls">
+        <button class="btn-capture" id="btn-capture"><div class="inner-circle"></div></button>
+    </div>
+    <div class="status-overlay" id="status">
+        <i class="fa-solid fa-check-circle" style="color: #22c55e; font-size: 4rem; margin-bottom: 1rem;"></i> 
+        <span>Sent to PC Screen!</span>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+    <script>
+        const socket = io();
+        const video = document.getElementById('video');
+        
+        // Setup Camera optimized for rear environment mobile camera (for documents)
+        navigator.mediaDevices.getUserMedia({ 
+            video: { 
+                facingMode: 'environment',
+                width: { ideal: 1920 },
+                height: { ideal: 1080 }
+            } 
+        })
+        .then(stream => { video.srcObject = stream; })
+        .catch(err => {
+            alert("Camera access denied! Please ensure you open this securely or accept permissions.");
+            console.error(err);
+        });
+            
+        document.getElementById('btn-capture').addEventListener('click', () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            
+            // Send high quality compressed jpeg to PC
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+            socket.emit('mobile_photo_captured', { image: dataUrl });
+            
+            // Show Feedback animation
+            const status = document.getElementById('status');
+            status.style.display = 'flex';
+            
+            // Slight haptic feedback logic if available
+            if (navigator.vibrate) navigator.vibrate(50);
+            
+            setTimeout(() => {
+                status.style.display = 'none';
+            }, 1500);
+        });
+    </script>
+</body>
+</html>

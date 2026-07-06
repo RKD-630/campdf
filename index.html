@@ -1,306 +1,340 @@
-<!DOCTYPE html><html lang="en"><head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<meta name="theme-color" content="#2d2d30" />
-<title>Smart Paint - MS Paint Style with AI Shape Correction</title>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Converter - Premium Document Tools</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Cropper.js CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
+    <!-- App Styles -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-background"></div>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar glass">
+            <div class="logo"></div>
+                <div class="logo-icon-bg"><i class="fa-solid fa-layer-group"></i></div>
+                <h2>All Converter</h2>
+                        <ul class="nav-links">
+                <li class="active" data-tab="tab-img-to-pdf">
+                    <i class="fa-solid fa-file-image"></i>
+                    <span>Image to PDF</span>
+                </li>
+                <li data-tab="tab-pdf-to-img">
+                    <i class="fa-solid fa-file-pdf"></i>
+                    <span>PDF to Image</span>
+                </li>
+                <li data-tab="tab-camera-pdf">
+                    <i class="fa-solid fa-camera"></i>
+                    <span>Camera PDF</span>
+                </li>
+                <li data-tab="tab-create-pdf">
+                    <i class="fa-solid fa-folder-plus"></i>
+                    <span>Create PDF</span>
+                </li>
+            </ul>
+        </nav>
 
-<link rel="stylesheet" href="style.css" /></head>
-<body data-theme="light">
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Tab: Image to PDF -->
+            <section id="tab-img-to-pdf" class="tab-pane active glass-pane">
+                <header class="tab-header">
+                    <h1>Image to PDF</h1>
+                    <p>Convert multiple images into a beautifully formatted PDF document.</p>
+                </header>
+                <div class="content-body">
+                    <div class="upload-zone" id="img-to-pdf-upload">
+                        <div class="upload-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+                        <p>Drag & drop images here or <strong>browse files</strong></p>
+                        <input type="file" id="img-to-pdf-input" multiple accept="image/*" hidden>
+                    </div>
+                    
+                    <div class="action-bar hidden" id="img-to-pdf-actions">
+                        <span class="file-count"><span id="img-to-pdf-count">0</span> files loaded</span>
+                        <div class="action-buttons">
+                            <button class="btn btn-secondary btn-clear">
+                                <i class="fa-solid fa-trash"></i> Clear All
+                            </button>
+                            <button class="btn btn-primary" id="btn-generate-img-to-pdf">
+                                <i class="fa-solid fa-file-export"></i> Convert to PDF
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="items-grid" id="img-to-pdf-grid"></div>
+                </div>
+            </section>
 
-<!-- Top Bar -->
-<div class="topbar">
-  <div class="logo">🎨 Smart Paint</div>
-  <button class="btn" onclick="newCanvas()">📄 New</button>
-  <button class="btn" onclick="document.getElementById('fileInput').click()">📂 Open</button>
-  <input type="file" id="fileInput" accept="image/*,.svg" style="display:none" onchange="openFile(event)" />
-  <button class="btn" onclick="showBackgroundModal()">🪣 Background Color</button>
-  <button class="btn" onclick="saveProject()">💾 Save</button>
-  <button class="btn" onclick="showExportModal()">📤 Export</button>
-  <div class="sep"></div>
-  <button class="btn icon" onclick="undo()" title="Undo">↶</button>
-  <button class="btn icon" onclick="redo()" title="Redo">↷</button>
-  <div class="sep"></div>
-  <button class="btn icon" onclick="zoomIn()" title="Zoom In">🔍+</button>
-  <button class="btn icon" onclick="zoomOut()" title="Zoom Out">🔍−</button>
-  <button class="btn icon" onclick="resetZoom()" title="Fit">⤢</button>
-  <div class="sep"></div>
-  <button class="btn icon" onclick="toggleRuler()" title="Ruler" id="rulerBtn">📏</button>
-  <button class="btn icon" onclick="toggleGrid()" title="Grid" id="gridBtn">▦</button>
-  <button class="btn icon" onclick="flipH()" title="Flip H">⇄</button>
-  <button class="btn icon" onclick="flipV()" title="Flip V">⇅</button>
-  <button class="btn icon" onclick="rotateCanvas()" title="Rotate">↻</button>
-  <button class="btn icon" onclick="clearCanvas()" title="Clear">🗑</button>
-  <div style="flex:1"></div>
-  <button class="btn icon" onclick="toggleTheme()" title="Theme" id="themeBtn">🌙</button>
-  <button class="btn icon" onclick="toggleFullscreen()" title="Fullscreen">⛶</button>
-  <button class="btn icon" onclick="toggleSidebar()" title="Panel" id="panelBtn">☰</button>
-</div>
+            <!-- Tab: PDF to Image -->
+            <section id="tab-pdf-to-img" class="tab-pane hidden glass-pane">
+                <header class="tab-header">
+                    <h1>PDF to Image</h1>
+                    <p>Extract high-resolution images from any PDF file.</p>
+                </header>
+                <div class="content-body">
+                    <div class="upload-zone" id="pdf-to-img-upload">
+                        <div class="upload-icon"><i class="fa-solid fa-file-pdf"></i></div>
+                        <p>Drag & drop a PDF here or <strong>browse files</strong></p>
+                        <input type="file" id="pdf-to-img-input" accept="application/pdf" hidden>
+                    </div>
+                    <div class="action-bar hidden" id="pdf-to-img-actions">
+                        <span class="file-count"><span id="pdf-to-img-count">0</span> pages extracted</span>
+                        <div class="action-buttons">
+                            <button class="btn btn-secondary btn-clear">
+                                <i class="fa-solid fa-trash"></i> Clear PDF
+                            </button>
+                            <button class="btn btn-primary" id="btn-export-pdf-images">
+                                <i class="fa-solid fa-download"></i> Download All as ZIP
+                            </button>
+                        </div>
+                    </div>
+                    <div class="items-grid" id="pdf-to-img-grid"></div>
+                </div>
+            </section>
 
-<!-- Main -->
-<div class="main" style="position: relative;">
-  <!-- Selection Toolbar -->
-  <div id="selectionToolbar" style="display:none; position:absolute; top: 10px; right: 10px; z-index: 1000; background: var(--toolbar); padding: 5px; border: 1px solid var(--border); border-radius: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.5); gap: 5px; align-items: center;">
-    <button class="btn icon" onclick="copySelection()" title="Copy (Ctrl+C)">📋</button>
-    <button class="btn icon" onclick="cutSelection()" title="Cut (Ctrl+X)">✂️</button>
-    <button class="btn icon" onclick="pasteSelection()" title="Paste (Ctrl+V)">📋⬇️</button>
-    <button class="btn icon" onclick="deleteSelection()" title="Delete (Del)">🗑️</button>
-  </div>
-  
-  <!-- Perspective Toolbar -->
-  <div id="perspectiveToolbar" style="display:none; position:absolute; top: 10px; right: 10px; z-index: 1000; background: var(--toolbar); padding: 5px; border: 1px solid var(--border); border-radius: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.5); gap: 5px; align-items: center;">
-    <button class="btn primary" onclick="applyPerspectiveCrop()">✅ Apply Crop</button>
-    <button class="btn" onclick="cancelPerspectiveCrop()">❌ Cancel</button>
-  </div>
+            <!-- Tab: Camera PDF -->
+            <section id="tab-camera-pdf" class="tab-pane hidden glass-pane camera-scanner-layout">
+                <header class="tab-header scanner-header">
+                    <h1>Camera to PDF Converter</h1>
+                    <p>Live document edge detection & perspective crop.</p>
+                </header>
+                
+                <div class="scanner-main-area" id="scanner-main-area">
+                    <!-- Live feed from camera -->
+                    <video id="scanner-video" autoplay playsinline class="hidden"></video>
+                    <!-- Displayed output (original feed/image + overlay lines here) -->
+                    <canvas id="scanner-canvas"></canvas>
+                    
+                    <!-- 4-point crop handles container -->
+                    <div id="scanner-crop-ui" class="hidden">
+                        <svg id="scanner-crop-poly" width="100%" height="100%" style="position: absolute; top:0; left:0; pointer-events:none;">
+                            <polygon points="0,0 0,0 0,0 0,0" fill="rgba(99, 102, 241, 0.2)" stroke="var(--primary)" stroke-width="2"/>
+                        </svg>
+                        <div class="crop-point" data-corner="0"></div>
+                        <div class="crop-point" data-corner="1"></div>
+                        <div class="crop-point" data-corner="2"></div>
+                        <div class="crop-point" data-corner="3"></div>
+                    </div>
 
-  <!-- Text Format Toolbar -->
-  <div class="text-format-bar" id="textFormatBar">
-    <select id="tfFont" onchange="updateActiveText('fontFamily', this.value)">
-      <option value="Arial">Arial</option>
-      <option value="Times New Roman">Times New Roman</option>
-      <option value="Courier">Courier</option>
-      <option value="Verdana">Verdana</option>
-      <option value="Comic Sans MS">Comic Sans MS</option>
-    </select>
-    <input type="number" id="tfSize" min="8" max="200" oninput="updateActiveText('fontSize', this.value + 'px')" style="width:60px" title="Font Size" />
-    <button class="btn icon" id="tfBold" onclick="toggleActiveText('fontWeight', 'bold', 'normal')" title="Bold"><b>B</b></button>
-    <button class="btn icon" id="tfItalic" onclick="toggleActiveText('fontStyle', 'italic', 'normal')" title="Italic"><i>I</i></button>
-    <button class="btn icon" id="tfUnderline" onclick="toggleActiveText('textDecoration', 'underline', 'none')" title="Underline"><u>U</u></button>
-    <div class="sep"></div>
-    <select id="tfColorType" onchange="toggleTextGradientUI()" style="width:80px">
-      <option value="solid">Solid</option>
-      <option value="gradient">Gradient</option>
-    </select>
-    <div id="tfSolidOpts" style="display:flex; align-items:center; gap:4px;">
-      <input type="color" id="tfColor" oninput="updateActiveText('color', this.value)" style="width:30px;height:24px;padding:0;border:none;cursor:pointer;" title="Text Color" />
+                    <div class="scanner-status" id="scanner-status">Loading OpenCV...</div>
+                </div>
+
+                <div class="scanner-toolbar glass">
+                    <div class="toolbar-group">
+                        <input type="file" id="scanner-gallery-input" accept="image/*" hidden>
+                        <button class="btn-icon" id="btn-scanner-gallery" title="Gallery Import"><i class="fa-solid fa-image"></i></button>
+                        <button class="btn-icon" id="btn-scanner-start" title="Open Camera"><i class="fa-solid fa-camera"></i></button>
+                        <button class="btn-icon" id="btn-scanner-switch" title="Flip Camera"><i class="fa-solid fa-rotate-right"></i></button>
+                        <button class="btn-icon" id="btn-scanner-light" title="Toggle Flash/Torch"><i class="fa-solid fa-bolt"></i></button>
+                    </div>
+                    
+                    <button class="btn-capture-main" id="btn-scanner-capture" title="Capture & Auto-Crop">
+                        <div class="inner-circle"></div>
+                    </button>
+                    
+                    <div class="toolbar-group edit-group" id="scanner-edit-group">
+                        <button class="btn-icon" id="btn-scanner-re-crop" title="Manual Crop Adjust"><i class="fa-solid fa-crop"></i></button>
+                        
+                        <div class="slider-popover-wrapper" id="scanner-sliders">
+                            <i class="fa-solid fa-sliders slider-icon" title="Adjustments" id="btn-scanner-sliders"></i>
+                            <div class="sliders-popup hidden glass" id="scanner-sliders-popup">
+                                <label><i class="fa-solid fa-sun"></i> Brght <input type="range" id="scanner-brightness" min="-100" max="100" value="0"></label>
+                                <label><i class="fa-solid fa-circle-half-stroke"></i> Cont <input type="range" id="scanner-contrast" min="0" max="200" value="100"></label>
+                                <label><i class="fa-solid fa-moon"></i> Dark <input type="range" id="scanner-darkness" min="0" max="100" value="0"></label>
+                            </div>
+                        </div>
+
+                        <button class="btn-icon" id="btn-scanner-rot-left" title="Rotate Left"><i class="fa-solid fa-rotate-left"></i></button>
+                        <button class="btn-icon" id="btn-scanner-rot-right" title="Rotate Right"><i class="fa-solid fa-rotate-right"></i></button>
+                    </div>
+                </div>
+
+                <div class="scanner-footer glass">
+                    <div class="scanner-thumbnails" id="scanner-thumbnails-strip">
+                        <!-- Thumbnails added here dynamically -->
+                    </div>
+                    <div class="scanner-actions">
+                        <button class="btn btn-secondary" id="btn-scanner-add-page" disabled><i class="fa-solid fa-plus"></i> Add Page</button>
+                        <button class="btn btn-primary" id="btn-scanner-save-pdf" disabled><i class="fa-solid fa-file-pdf"></i> Save PDF (<span id="scanner-page-count">0</span>)</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tab: Create PDF (Advanced) -->
+            <section id="tab-create-pdf" class="tab-pane hidden glass-pane">
+                <header class="tab-header">
+                    <h1>Advanced PDF Builder</h1>
+                    <p>Mix images & PDFs, reorder dynamically, edit pages, and compile a master PDF.</p>
+                </header>
+                <div class="content-body">
+                    <div class="upload-zone row-layout" id="create-pdf-upload">
+                        <div class="upload-info">
+                            <div class="upload-icon small"><i class="fa-solid fa-layer-group"></i></div>
+                            <div>
+                                <h3>Add Media</h3>
+                                <p>Drag & drop or click to add images and PDFs</p>
+                            </div>
+                        </div>
+                        <input type="file" id="create-pdf-input" multiple accept="image/*,application/pdf" hidden>
+                        <button class="btn btn-primary btn-outline" onclick="document.getElementById('create-pdf-input').click()">
+                            <i class="fa-solid fa-plus"></i> Browse
+                        </button>
+                    </div>
+                    <div class="action-bar hidden" id="create-pdf-actions">
+                        <div class="pagination-info">
+                            Pages: <strong><span id="total-pages-display">0</span></strong>
+                        </div>
+                        <div class="action-buttons">
+                            <button class="btn btn-secondary btn-clear">
+                                <i class="fa-solid fa-trash"></i> Clear Assembly
+                            </button>
+                            <button class="btn btn-primary" id="btn-generate-create-pdf">
+                                <i class="fa-solid fa-file-export"></i> Compile Master PDF
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Interactive list/grid with SortableJS -->
+                    <div class="items-grid sortable-grid" id="create-pdf-grid"></div>
+                </div>
+            </section>
+        </main>
     </div>
-    <div id="tfGradOpts" style="display:none; align-items:center; gap:4px;">
-      <input type="color" id="tfGrad1" value="#ff0000" oninput="applyGradientToText()" style="width:24px;height:24px;padding:0;border:none;cursor:pointer;" title="Color 1" />
-      <input type="color" id="tfGrad2" value="#0000ff" oninput="applyGradientToText()" style="width:24px;height:24px;padding:0;border:none;cursor:pointer;" title="Color 2" />
-      <input type="number" id="tfGradAngle" value="90" oninput="applyGradientToText()" style="width:50px" title="Angle" />
-    </div>
-    <div class="sep"></div>
-    <select id="tfWordArt" onchange="applyWordArt(this.value)">
-      <option value="none">Normal Text</option>
-      <option value="wa1">🌈 Rainbow</option>
-      <option value="wa2">🧊 3D Block</option>
-      <option value="wa3">⭐ Pop Art</option>
-      <option value="wa4">⚙️ Chrome</option>
-    </select>
-  </div>
 
-  <!-- Brush Menu Options -->
-  <div class="brush-menu" id="brushMenu">
-    <button class="brush-option active" onclick="setBrushType('round', this)">🖌️ Round Brush</button>
-    <button class="brush-option" onclick="setBrushType('square', this)">⬛ Square Brush</button>
-    <button class="brush-option" onclick="setBrushType('marker', this)">🖍️ Marker</button>
-    <button class="brush-option" onclick="setBrushType('highlighter', this)">🖋️ Highlighter</button>
-    <button class="brush-option" onclick="setBrushType('airbrush', this)">💨 Airbrush</button>
-  </div>
+    <!-- Global Image Editor Modal -->
+    <div id="editor-modal" class="modal-overlay hidden">
+        <div class="modal-content glass-pane">
+            <div class="modal-header">
+                <h2>Photo & Document Editor</h2>
+                <button class="btn-close" id="btn-close-editor"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="editor-layout">
+                <div class="editor-canvas-container">
+                    <div class="canvas-wrapper">
+                        <!-- Used for Cropper.js -->
+                        <img id="editor-image-preview" src="">
+                    </div>
+                </div>
+                <div class="editor-sidebar glass">
+                    <div class="editor-tabs">
+                        <button class="editor-tab active" data-target="adjust">Adjust</button>
+                        <button class="editor-tab" data-target="crop">Crop</button>
+                        <button class="editor-tab" data-target="text">Text</button>
+                    </div>
+                    
+                    <div class="editor-tab-content active" id="editor-panel-adjust">
+                        <div class="control-group">
+                            <div class="flex-between">
+                                <label>Brightness</label>
+                                <span id="val-brightness">100%</span>
+                            </div>
+                            <input type="range" id="filter-brightness" min="0" max="200" value="100">
+                        </div>
+                        <div class="control-group">
+                            <div class="flex-between">
+                                <label>Contrast</label>
+                                <span id="val-contrast">100%</span>
+                            </div>
+                            <input type="range" id="filter-contrast" min="0" max="200" value="100">
+                        </div>
+                        <div class="control-group">
+                            <div class="flex-between">
+                                <label>Grayscale (Scan Mode)</label>
+                                <span id="val-grayscale">0%</span>
+                            </div>
+                            <input type="range" id="filter-grayscale" min="0" max="100" value="0">
+                        </div>
+                        <button class="btn btn-secondary full-width mt-2" id="btn-reset-filters">Reset Filters</button>
+                    </div>
 
-  <!-- Select Menu Options -->
-  <div class="brush-menu" id="selectMenu">
-    <button class="brush-option active" onclick="setSelectType('rect', this)">⬚ Rectangular Marquee</button>
-    <!-- Add more marquee types here if needed -->
-  </div>
+                    <div class="editor-tab-content hidden" id="editor-panel-crop">
+                        <p class="help-text">Select an aspect ratio or crop freely.</p>
+                        <div class="crop-ratios">
+                            <button class="ratio-btn" data-ratio="NaN">Free</button>
+                            <button class="ratio-btn" data-ratio="1">1:1</button>
+                            <button class="ratio-btn" data-ratio="1.33333">4:3</button>
+                            <button class="ratio-btn" data-ratio="1.77777">16:9</button>
+                            <button class="ratio-btn" data-ratio="0.707">A4</button>
+                        </div>
+                        <button class="btn btn-primary full-width mt-2" id="btn-apply-crop">Apply Crop</button>
+                    </div>
 
-  <!-- Crop Menu Options -->
-  <div class="brush-menu" id="cropMenu">
-    <button class="brush-option active" onclick="setCropType('normal', this)">✂️ Normal Crop</button>
-    <button class="brush-option" onclick="setCropType('perspective', this)">📐 Perspective Crop</button>
-  </div>
+                    <div class="editor-tab-content hidden" id="editor-panel-text">
+                        <div class="text-tools">
+                            <input type="text" id="text-input" class="full-width" placeholder="Enter text to overlay...">
+                            <div class="color-pickers mt-2">
+                                <div class="color-field">
+                                    <label>Text</label>
+                                    <input type="color" id="text-color" value="#000000">
+                                </div>
+                                <div class="color-field">
+                                    <label>Background</label>
+                                    <input type="color" id="text-bg-color" value="#ffffff">
+                                </div>
+                            </div>
+                            <button class="btn btn-secondary full-width mt-2" id="btn-add-text"><i class="fa-solid fa-plus"></i> Add Text Box</button>
+                        </div>
+                        
+                        <div class="added-texts mt-2">
+                            <h4>Active Text Elements</h4>
+                            <div id="text-elements-list" class="text-elements-list"></div>
+                        </div>
+                        <p class="help-text note">* Text can be positioned by dragging.</p>
+                    </div>
 
-  <!-- Left Toolbar -->
-  <div class="left-toolbar">
-    <button class="tool-btn active" data-tool="pencil" data-tooltip="Pencil (P)" title="Pencil (P)">✏️</button>
-    <button class="tool-btn" data-tool="freehand" data-tooltip="Freehand (Smart)" title="Freehand (Smart)">✍️</button>
-    <button class="tool-btn" data-tool="select" data-tooltip="Select" title="Select">⬚</button>
-    <button class="tool-btn" data-tool="crop" data-tooltip="Crop" title="Crop">✂️</button>
-    <button class="tool-btn" data-tool="lasso" data-tooltip="Lasso Select" title="Lasso Select">➰</button>
-    <button class="tool-btn" data-tool="move" data-tooltip="Move Layer (V)" title="Move Layer (V)">✥</button>
-    <button class="tool-btn" data-tool="brush" data-tooltip="Brush (B)" title="Brush (B)">🖌️</button>
-    <button class="tool-btn" data-tool="airbrush" data-tooltip="Airbrush (A)" title="Airbrush (A)">💨</button>
-    <button class="tool-btn" data-tool="eraser" data-tooltip="Eraser (E)" title="Eraser (E)">🧽</button>
-    <button class="tool-btn" data-tool="undo-brush" data-tooltip="Undo Brush (U)" title="Undo Brush (U)">🔙</button>
-    <button class="tool-btn" data-tool="fill" data-tooltip="Fill (F)" title="Fill (F)">🪣</button>
-    <button class="tool-btn" data-tool="picker" data-tooltip="Color Picker (I)" title="Color Picker (I)">💧</button>
-    <button class="tool-btn" data-tool="text" data-tooltip="Text (T)" title="Text (T)">🔤</button>
-    <button class="tool-btn" data-tool="line" data-tooltip="Line (L)" title="Line (L)">📏</button>
-    <button class="tool-btn" data-tool="rect" data-tooltip="Rectangle (R)" title="Rectangle (R)">▭</button>
-    <button class="tool-btn" data-tool="rrect" data-tooltip="Rounded Rect" title="Rounded Rect">▢</button>
-    <button class="tool-btn" data-tool="circle" data-tooltip="Circle (C)" title="Circle (C)">◯</button>
-    <button class="tool-btn" data-tool="ellipse" data-tooltip="Ellipse" title="Ellipse">⬭</button>
-    <button class="tool-btn" data-tool="triangle" data-tooltip="Triangle" title="Triangle">△</button>
-    <button class="tool-btn" data-tool="isosceles" data-tooltip="Isosceles" title="Isosceles">▲</button>
-    <button class="tool-btn" data-tool="acute-triangle" data-tooltip="Acute Triangle" title="Acute Triangle">🔺</button>
-    <button class="tool-btn" data-tool="right-triangle" data-tooltip="Right Triangle" title="Right Triangle">📐</button>
-    <button class="tool-btn" data-tool="diamond" data-tooltip="Diamond" title="Diamond">♦</button>
-    <button class="tool-btn" data-tool="quad" data-tooltip="Quadrilateral" title="Quadrilateral">◇</button>
-    <button class="tool-btn" data-tool="parallelogram" data-tooltip="Parallelogram" title="Parallelogram">▱</button>
-    <button class="tool-btn" data-tool="pentagon" data-tooltip="Pentagon" title="Pentagon">⬠</button>
-    <button class="tool-btn" data-tool="hexagon" data-tooltip="Hexagon" title="Hexagon">⬡</button>
-    <button class="tool-btn" data-tool="star" data-tooltip="Star" title="Star">⭐</button>
-    <button class="tool-btn" data-tool="arrow" data-tooltip="Arrow" title="Arrow">➤</button>
-    <button class="tool-btn" data-tool="polygon" data-tooltip="Polygon" title="Polygon">⬣</button>
-    <button class="tool-btn" data-tool="cone" data-tooltip="Cone" title="Cone">🍦</button>
-    <button class="tool-btn" data-tool="cylinder" data-tooltip="Cylinder" title="Cylinder">🛢️</button>
-    <button class="tool-btn" data-tool="cube" data-tooltip="Cube" title="Cube">🧊</button>
-    <button class="tool-btn" data-tool="semi-circle" data-tooltip="Semi-Circle" title="Semi-Circle">🌗</button>
-    <button class="tool-btn" data-tool="arch" data-tooltip="Arch" title="Arch">⛩️</button>
-    <button class="tool-btn" data-tool="curve" data-tooltip="Curve" title="Curve">〰️</button>
-  </div>
-
-  <!-- Canvas -->
-  <div class="canvas-wrap" id="canvasWrap">
-    <div class="canvas-container pencil" id="canvasContainer">
-      <canvas id="mainCanvas"></canvas>
-      <canvas id="previewCanvas"></canvas>
-      <canvas id="gridCanvas"></canvas>
-      <div id="textLayer"></div>
-    </div>
-  </div>
-
-  <!-- Right Sidebar -->
-  <div class="right-sidebar" id="rightSidebar">
-    <div class="sidebar-section">
-      <h4>Canvas</h4>
-      <button class="btn" onclick="showResizeModal()" style="width:100%;margin-bottom:4px">Resize Image/Canvas</button>
-      <button class="btn" onclick="toggleTransparent()" id="transpBtn" style="width:100%;margin-bottom:6px">Transparent BG: OFF</button>
-      <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer">
-        <input type="checkbox" id="lockCanvas" onchange="state.canvasLocked = this.checked" /> Fix Canvas Position
-      </label>
-    </div>
-
-    <div class="sidebar-section">
-      <h4>Effects</h4>
-      <button class="btn" onclick="applyPhotoSketch()" style="width:100%;margin-bottom:4px">Photo Sketch</button>
-    </div>
-
-    <div class="sidebar-section">
-      <h4>Colors</h4>
-      <div class="color-row">
-        <div class="color-preview" id="fgPreview" style="background:#000000">
-          <input type="color" id="fgColor" value="#000000" />
+                    <div class="editor-actions">
+                        <button class="btn btn-secondary" id="btn-cancel-edit">Cancel</button>
+                        <button class="btn btn-primary" id="btn-save-edit">Save Changes</button>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div style="font-size:11px">FG</div>
-        <div class="color-preview" id="bgPreview" style="background:#ffffff">
-          <input type="color" id="bgColor" value="#ffffff" />
+    </div>
+
+    <!-- Replace Page Modal -->
+    <div id="replace-modal" class="modal-overlay hidden">
+        <div class="modal-content glass-pane small-modal">
+            <div class="modal-header">
+                <h2>Replace Page</h2>
+                <button class="btn-close" id="btn-close-replace"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="upload-zone small" id="replace-upload">
+                <i class="fa-solid fa-file-import"></i>
+                <p>Click to upload a new Image or PDF</p>
+                <input type="file" id="replace-input" accept="image/*,application/pdf" hidden>
+            </div>
         </div>
-        <div style="font-size:11px">BG</div>
-        <button class="btn icon" onclick="swapColors()" title="Swap">⇄</button>
-      </div>
-      <input type="text" id="hexInput" value="#000000" style="width:100%;padding:4px;border:1px solid var(--border);border-radius:4px;background:var(--toolbar);color:var(--text);font-size:12px;margin-bottom:8px" placeholder="#HEX" />
-      <div class="color-swatch-grid" id="swatchGrid"></div>
     </div>
 
-    <div class="sidebar-section">
-      <h4>Brush Settings</h4>
-      <div class="slider-row">
-        <label>Size</label>
-        <input type="range" id="brushSize" min="1" max="100" value="4" />
-        <span class="val" id="brushSizeVal">4</span>
-      </div>
-      <div class="slider-row">
-        <label>Opacity</label>
-        <input type="range" id="brushOpacity" min="1" max="100" value="100" />
-        <span class="val" id="brushOpacityVal">100</span>
-      </div>
-      <div class="slider-row">
-        <label>Smoothing</label>
-        <input type="range" id="smoothing" min="0" max="100" value="50" />
-        <span class="val" id="smoothingVal">50</span>
-      </div>
-      <div class="slider-row">
-        <label>Hardness</label>
-        <input type="range" id="hardness" min="0" max="100" value="100" />
-        <span class="val" id="hardnessVal">100</span>
-      </div>
+    <!-- Hidden Canvas for Processing -->
+    <div id="hidden-workspace" style="display:none;"></div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay hidden">
+        <div class="spinner"></div>
+        <h3 id="loading-message">Processing...</h3>
     </div>
 
-    <div class="sidebar-section">
-      <h4>Gradient</h4>
-      <select id="gradientType" style="width:100%;padding:4px;border:1px solid var(--border);border-radius:4px;background:var(--toolbar);color:var(--text);margin-bottom:6px">
-        <option value="solid">Solid Color</option>
-        <option value="linear">Linear Gradient</option>
-        <option value="radial">Radial Gradient</option>
-      </select>
-      <div class="slider-row">
-        <label>Angle</label>
-        <input type="range" id="gradAngle" min="0" max="360" value="90" />
-        <span class="val" id="gradAngleVal">90°</span>
-      </div>
-      <div class="color-row">
-        <div class="color-preview" id="gradColor1" style="background:#ff0000">
-          <input type="color" id="gradColor1Input" value="#ff0000" />
-        </div>
-        <span style="font-size:11px">→</span>
-        <div class="color-preview" id="gradColor2" style="background:#0000ff">
-          <input type="color" id="gradColor2Input" value="#0000ff" />
-        </div>
-      </div>
-    </div>
-
-    <div class="sidebar-section">
-      <h4>Fill Style</h4>
-      <select id="fillStyle" style="width:100%;padding:4px;border:1px solid var(--border);border-radius:4px;background:var(--toolbar);color:var(--text)">
-        <option value="stroke">Outline Only</option>
-        <option value="fill">Fill Only</option>
-        <option value="both">Fill + Outline</option>
-      </select>
-    </div>
-
-    <div class="sidebar-section">
-      <h4>Layers</h4>
-      <div style="display:flex;gap:4px;margin-bottom:8px">
-        <button class="btn" onclick="addLayer()" style="flex:1">+ Add</button>
-        <button class="btn" onclick="deleteLayer()">🗑</button>
-      </div>
-      <div class="slider-row">
-        <label>Opacity</label>
-        <input type="range" id="layerOpacity" min="0" max="100" value="100" oninput="updateLayerOpacity(this.value)" />
-        <span class="val" id="layerOpacityVal">100</span>
-      </div>
-      <div class="layers-list" id="layersList"></div>
-    </div>
-
-    </div>
-  </div>
-
-
-<!-- Bottom Toolbar (Mobile) -->
-<div class="bottom-toolbar">
-  <button class="tool-btn" onclick="undo()" title="Undo">↶</button>
-  <button class="tool-btn" onclick="redo()" title="Redo">↷</button>
-  <div class="sep" style="height:30px"></div>
-  <div class="color-preview" id="fgPreviewMobile" style="background:#000000;width:36px;height:36px" title="Color">
-    <input type="color" id="fgColorMobile" value="#000000" />
-  </div>
-  <input type="range" id="brushSizeMobile" min="1" max="100" value="4" style="width:100px" title="Brush Size" />
-  <button class="tool-btn" onclick="zoomIn()" title="Zoom In">🔍+</button>
-  <button class="tool-btn" onclick="zoomOut()" title="Zoom Out">🔍−</button>
-  <button class="tool-btn" onclick="toggleSidebar()" title="Toggle Menu">☰</button>
-</div>
-
-<!-- Status Bar -->
-<div class="statusbar">
-  <span id="statusTool">Tool: Pencil</span>
-  <span id="statusSize">Size: 4</span>
-  <span id="statusPos">X: 0, Y: 0</span>
-  <span id="statusZoom">Zoom: 100%</span>
-  <span id="statusCanvas">Canvas: 1200×800</span>
-</div>
-
-<!-- Popup -->
-<div class="popup hidden" id="popup">
-  <span id="popupText">Shape Corrected</span>
-  <button onclick="acceptCorrection()">Accept</button>
-  <button onclick="undoCorrection()">Undo</button>
-</div>
-
-<!-- Modal -->
-<div class="modal-overlay" id="modal">
-  <div class="modal" id="modalContent"></div>
-</div>
-
-
-
-<script src="script.js"></script></body></html>
+    <!-- Scripts -->
+    <script async src="https://docs.opencv.org/4.8.0/opencv.js" onload="window.onOpenCvReadyCallback && window.onOpenCvReadyCallback();" type="text/javascript"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    
+    <!-- App Logic -->
+    <script src="app.js"></script>
+</body>
+</html>
