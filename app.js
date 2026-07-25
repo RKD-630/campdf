@@ -78,8 +78,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /* === Navigation === */
-    const navLinks = document.querySelectorAll('.nav-links li');
+    const navLinks = document.querySelectorAll('.nav-links li[data-tab]');
     const tabPanes = document.querySelectorAll('.tab-pane');
+
+    const btnThemeToggle = document.getElementById('btn-theme-toggle');
+    if (btnThemeToggle) {
+        btnThemeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('light-theme');
+            const isLight = document.body.classList.contains('light-theme');
+            btnThemeToggle.querySelector('i').className = isLight ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+            btnThemeToggle.title = isLight ? 'Dark Mode' : 'Light Mode';
+        });
+    }
 
     navLinks.forEach(link => {
         link.addEventListener('click', () => {
@@ -140,7 +150,15 @@ document.addEventListener('DOMContentLoaded', () => {
         renderGrid('imgToPdf', imgToPdfGrid, imgToPdfActions);
     });
 
-    document.getElementById('btn-generate-img-to-pdf').addEventListener('click', () => generatePdf(state.imgToPdf, 'ImagesToPDF.pdf'));
+    document.getElementById('btn-generate-img-to-pdf').addEventListener('click', () => {
+        const itemsToExport = state.imgToPdf.some(i => i.selected) ? state.imgToPdf.filter(i => i.selected) : state.imgToPdf;
+        const pwd = document.getElementById('img-pdf-password') ? document.getElementById('img-pdf-password').value : null;
+        if(pwd && !/^\d{4}$/.test(pwd)) {
+            alert("Password must be exactly 4 digits.");
+            return;
+        }
+        generatePdf(itemsToExport, 'ImagesToPDF.pdf', pwd);
+    });
 
 
     /* === Tab 2: PDF to Image === */
@@ -401,7 +419,19 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.getElementById('btn-generate-pdf-to-pdf').addEventListener('click', async () => {
-        if(state.pdfToPdf.length === 0) return;
+        const itemsToExport = state.pdfToPdf.some(i => i.selected) ? state.pdfToPdf.filter(i => i.selected) : state.pdfToPdf;
+        if(itemsToExport.length === 0) return;
+        
+        const pwd = document.getElementById('pdf-password').value;
+        if(pwd) {
+            if(!/^\d{4}$/.test(pwd)) {
+                alert("Password must be exactly 4 digits.");
+                return;
+            }
+            generatePdf(itemsToExport, "Secure_PDF.pdf", pwd);
+            return;
+        }
+
         showLoading('Exporting PDF... (High Quality)');
         
         try {
@@ -411,11 +441,11 @@ document.addEventListener('DOMContentLoaded', () => {
             // Cache loaded PDFLib documents to avoid parsing same file multiple times
             const loadedPdfDocs = {};
             
-            for(let i = 0; i < state.pdfToPdf.length; i++) {
-                const item = state.pdfToPdf[i];
+            for(let i = 0; i < itemsToExport.length; i++) {
+                const item = itemsToExport[i];
                 const compression = document.getElementById('pdf-compression').value;
                 
-                document.getElementById('loading-message').textContent = `Processing page ${i+1} of ${state.pdfToPdf.length}...`;
+                document.getElementById('loading-message').textContent = `Processing page ${i+1} of ${itemsToExport.length}...`;
                 
                 const isModified = item.crop || item.texts.length > 0 || item.filters.brightness !== 100 || item.filters.contrast !== 100 || item.filters.grayscale !== 0;
                 
@@ -567,13 +597,22 @@ document.addEventListener('DOMContentLoaded', () => {
             col.className = 'item-card';
             if (item.selected) col.classList.add('selected');
             
-            // Toggle selection on card click
-            col.addEventListener('click', (e) => {
-                if (e.target.closest('.item-overlay') || e.target.closest('.btn-icon')) return; // Ignore button clicks
-                if(stateKey === 'pdfToPdf') {
+            // Toggle selection on click or hold
+            let holdTimer;
+            col.addEventListener('pointerdown', (e) => {
+                if (e.target.closest('.item-overlay') || e.target.closest('.btn-icon')) return;
+                holdTimer = setTimeout(() => {
                     item.selected = !item.selected;
                     renderGrid(stateKey, gridEl, actionsEl);
-                }
+                }, 400); // 400ms hold
+            });
+            col.addEventListener('pointerup', () => clearTimeout(holdTimer));
+            col.addEventListener('pointerleave', () => clearTimeout(holdTimer));
+            
+            col.addEventListener('click', (e) => {
+                if (e.target.closest('.item-overlay') || e.target.closest('.btn-icon')) return;
+                item.selected = !item.selected;
+                renderGrid(stateKey, gridEl, actionsEl);
             });
             
             // Generate a quick thumbnail applying filters structurally without canvas for speed, or canvas if crop exists
@@ -898,12 +937,20 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    async function generatePdf(itemArray, filename) {
+    async function generatePdf(itemArray, filename, password = null) {
         if(itemArray.length === 0) return;
         showLoading('Generating PDF...');
         
         const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF();
+        const options = {};
+        if (password) {
+            options.encryption = {
+                userPassword: password,
+                ownerPassword: password,
+                userPermissions: ["print", "copy"]
+            };
+        }
+        const pdf = new jsPDF(options);
         
         for(let i=0; i<itemArray.length; i++) {
             const dataUrl = await renderFinalImage(itemArray[i]);

@@ -20,9 +20,15 @@
     <div class="app-container">
         <!-- Sidebar Navigation -->
         <nav class="sidebar glass">
-            <div class="logo"></div>
+            <div class="logo">
                 <div class="logo-icon-bg"><i class="fa-solid fa-layer-group"></i></div>
-                <h2>All Converter</h2>
+                <h2>
+                    <span id="btn-theme-toggle" style="cursor: pointer; margin-right: 8px;" title="Toggle Theme">
+                        <i class="fa-solid fa-moon"></i>
+                    </span>
+                    All Converter
+                </h2>
+            </div>
             <div class="bottom-navigation">
                 <ul class="nav-links">
                     <li class="active" data-tab="tab-img-to-pdf">
@@ -66,6 +72,7 @@
                             <button class="btn btn-secondary btn-clear">
                                 <i class="fa-solid fa-trash"></i> Clear All
                             </button>
+                            <input type="password" id="img-pdf-password" placeholder="4-digit PIN (Optional)" maxlength="4" style="padding: 5px; border-radius: 5px; width: 160px; background: rgba(255,255,255,0.1); color: inherit; border: 1px solid rgba(255,255,255,0.2); font-size: 0.85rem;">
                             <button class="btn btn-primary" id="btn-generate-img-to-pdf">
                                 <i class="fa-solid fa-file-export"></i> Convert to PDF
                             </button>
@@ -79,7 +86,7 @@
             <!-- Tab: PDF to PDF -->
             <section id="tab-pdf-to-pdf" class="tab-pane hidden glass-pane">
                 <header class="tab-header">
-                    <h3>PDF to PDF Converter</h3>
+                    <h3><i class="fa-solid fa-file-pdf"></i> PDF to PDF Converter</h3>
                     <p>Reorder, edit, and merge PDF pages with zero quality loss.</p>
                 </header>
                 <div class="content-body">
@@ -114,6 +121,7 @@
                                 <button class="btn btn-icon" id="btn-pdf-zoom-in" title="Zoom In"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
                             </div>
                             <div class="compression-settings" style="display: flex; align-items: center; gap: 5px; margin-left: auto;">
+                                <input type="password" id="pdf-password" placeholder="4-digit PIN (Optional)" maxlength="4" style="padding: 5px; border-radius: 5px; width: 160px; background: rgba(255,255,255,0.1); color: inherit; border: 1px solid rgba(255,255,255,0.2); font-size: 0.85rem;">
                                 <label for="pdf-compression" style="font-size: 0.85rem; font-weight: 500;">Quality:</label>
                                 <select id="pdf-compression" class="form-select" style="padding: 5px; border-radius: 5px; background: rgba(255,255,255,0.1); color: inherit; border: 1px solid rgba(255,255,255,0.2);">
                                     <option value="high">High (No Loss)</option>

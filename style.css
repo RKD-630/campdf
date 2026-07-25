@@ -25,6 +25,24 @@
     --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+body.light-theme {
+    --bg-color: #f1f5f9;
+    --primary: #4f46e5;
+    --primary-hover: #4338ca;
+    --secondary: rgba(0, 0, 0, 0.05);
+    --secondary-hover: rgba(0, 0, 0, 0.1);
+    --text-primary: #0f172a;
+    --text-secondary: #334155;
+    
+    --glass-bg: rgba(255, 255, 255, 0.85);
+    --glass-border: rgba(0, 0, 0, 0.1);
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.05);
+    
+    --glass-pane-bg: rgba(255, 255, 255, 0.7);
+    --upload-bg: rgba(0, 0, 0, 0.03);
+    --header-grad: linear-gradient(to right, #0f172a, #4f46e5);
+}
+
 * {
     box-sizing: border-box;
     margin: 0;
