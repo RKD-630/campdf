@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>All Converter - Premium Document Tools</title>
+    <title>All Converter - PremiumImage to PDFImage to PDF Document Tools</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -29,8 +29,12 @@
                         <i class="fa-solid fa-file-image"></i>
                         <span>Image to PDF</span>
                     </li>
-                    <li data-tab="tab-pdf-to-img">
+                    <li data-tab="tab-pdf-to-pdf">
                         <i class="fa-solid fa-file-pdf"></i>
+                        <span>PDF to PDF</span>
+                    </li>
+                    <li data-tab="tab-pdf-to-img">
+                        <i class="fa-solid fa-file-image"></i>
                         <span>PDF to Image</span>
                     </li>
                     <li data-tab="tab-create-pdf">
@@ -46,7 +50,7 @@
             <!-- Tab: Image to PDF -->
             <section id="tab-img-to-pdf" class="tab-pane active glass-pane">
                 <header class="tab-header">
-                    <h1>Image to PDF</h1>
+                    <h3>Image to PDF</h3>
                     <p>Convert multiple images into a beautifully formatted PDF document.</p>
                 </header>
                 <div class="content-body">
@@ -72,10 +76,73 @@
                 </div>
             </section>
 
+            <!-- Tab: PDF to PDF -->
+            <section id="tab-pdf-to-pdf" class="tab-pane hidden glass-pane">
+                <header class="tab-header">
+                    <h3>PDF to PDF Converter</h3>
+                    <p>Reorder, edit, and merge PDF pages with zero quality loss.</p>
+                </header>
+                <div class="content-body">
+                    <div class="upload-zone row-layout" id="pdf-to-pdf-upload">
+                        <div class="upload-info">
+                            <div class="upload-icon small"><i class="fa-solid fa-file-pdf"></i></div>
+                            <div>
+                                <h3>Import PDF</h3>
+                                <p>Drag & drop or click to add PDF files</p>
+                            </div>
+                        </div>
+                        <input type="file" id="pdf-to-pdf-input" multiple accept="application/pdf" hidden>
+                        <button class="btn btn-primary btn-outline" onclick="document.getElementById('pdf-to-pdf-input').click()">
+                            <i class="fa-solid fa-plus"></i> Browse
+                        </button>
+                    </div>
+                    
+                    <div class="action-bar hidden" id="pdf-to-pdf-actions" style="flex-wrap: wrap; gap: 10px;">
+                        <div class="toolbar" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                            <button class="btn btn-secondary btn-icon-text" id="btn-pdf-add-more" onclick="document.getElementById('pdf-to-pdf-input').click()">
+                                <i class="fa-solid fa-plus"></i> Add PDF
+                            </button>
+                            <button class="btn btn-secondary btn-icon-text" id="btn-pdf-undo" disabled>
+                                <i class="fa-solid fa-rotate-left"></i> Undo
+                            </button>
+                            <button class="btn btn-secondary btn-icon-text" id="btn-pdf-redo" disabled>
+                                <i class="fa-solid fa-rotate-right"></i> Redo
+                            </button>
+                            <div class="zoom-controls" style="display: flex; align-items: center; gap: 5px; margin-left: 10px;">
+                                <button class="btn btn-icon" id="btn-pdf-zoom-out" title="Zoom Out"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+                                <span id="pdf-zoom-level">100%</span>
+                                <button class="btn btn-icon" id="btn-pdf-zoom-in" title="Zoom In"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+                            </div>
+                            <div class="compression-settings" style="display: flex; align-items: center; gap: 5px; margin-left: auto;">
+                                <label for="pdf-compression" style="font-size: 0.85rem; font-weight: 500;">Quality:</label>
+                                <select id="pdf-compression" class="form-select" style="padding: 5px; border-radius: 5px; background: rgba(255,255,255,0.1); color: inherit; border: 1px solid rgba(255,255,255,0.2);">
+                                    <option value="high">High (No Loss)</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="low">Low (Compressed)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="action-buttons" style="margin-left: auto;">
+                            <button class="btn btn-secondary btn-icon-text hidden" id="btn-pdf-delete-selected" style="background: rgba(255,50,50,0.2); color: #ff5555; border: 1px solid rgba(255,50,50,0.3);">
+                                <i class="fa-solid fa-trash-can"></i> Delete Selected
+                            </button>
+                            <button class="btn btn-secondary btn-clear" id="btn-pdf-clear">
+                                <i class="fa-solid fa-trash"></i> Clear
+                            </button>
+                            <button class="btn btn-primary" id="btn-generate-pdf-to-pdf">
+                                <i class="fa-solid fa-file-export"></i> Export PDF
+                            </button>
+                        </div>
+                    </div>
+                    <div class="items-grid sortable-grid" id="pdf-to-pdf-grid"></div>
+                </div>
+            </section>
+
+
             <!-- Tab: PDF to Image -->
             <section id="tab-pdf-to-img" class="tab-pane hidden glass-pane">
                 <header class="tab-header">
-                    <h1>PDF to Image</h1>
+                    <h3>PDF to Image</h3>
                     <p>Extract high-resolution images from any PDF file.</p>
                 </header>
                 <div class="content-body">
@@ -103,7 +170,7 @@
             <!-- Tab: Create PDF (Advanced) -->
             <section id="tab-create-pdf" class="tab-pane hidden glass-pane">
                 <header class="tab-header">
-                    <h1>Advanced PDF Builder</h1>
+                    <h3>Advanced PDF Builder</h3>
                     <p>Mix images & PDFs, reorder dynamically, edit pages, and compile a master PDF.</p>
                 </header>
                 <div class="content-body">
@@ -261,6 +328,7 @@
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>

@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
         currentTab: 'tab-img-to-pdf',
         imgToPdf: [], // { id, dataUrl, name, filters: {brightness, contrast, grayscale}, texts: [], crop: null }
         pdfToImg: [],
-        cameraPdf: [],
+        pdfToPdf: [],
         createPdf: [], // Mix of above
         
         cvReady: false,
@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const createItemObj = (dataUrl, name) => ({
         id: generateId(), dataUrl, name,
         filters: { brightness: 100, contrast: 100, grayscale: 0 },
-        texts: [], crop: null
+        texts: [], crop: null, selected: false
     });
 
     async function rotateItemImage(item, direction) {
@@ -92,8 +92,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 else pane.classList.add('hidden');
             });
             
-            // Cleanup camera if switching away
-            if(targetId !== 'tab-camera-pdf') stopCamera();
+            // Cleanup camera if switching away (legacy support)
+            if(typeof stopCamera === 'function') stopCamera();
         });
     });
 
@@ -170,6 +170,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 canvas.width = viewport.width;
                 await page.render({canvasContext: ctx, viewport: viewport}).promise;
                 state.pdfToImg.push(createItemObj(canvas.toDataURL('image/jpeg', 0.9), `Page_${i}.jpg`));
+                
+                if (i % 5 === 0) {
+                    document.getElementById('loading-message').textContent = `Extracting page ${i} of ${pdf.numPages}...`;
+                    await new Promise(r => setTimeout(r, 0));
+                }
             }
             renderGrid('pdfToImg', pdfToImgGrid, pdfToImgActions);
         } catch(e) {
@@ -235,6 +240,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         canvas.width = viewport.width;
                         await page.render({canvasContext: ctx, viewport: viewport}).promise;
                         state.createPdf.push(createItemObj(canvas.toDataURL('image/jpeg', 0.9), `${file.name}_P${i}.jpg`));
+                        
+                        if (i % 5 === 0) {
+                            document.getElementById('loading-message').textContent = `Processing page ${i} of ${pdf.numPages}...`;
+                            await new Promise(r => setTimeout(r, 0));
+                        }
                     }
                 } catch(e) { console.error(e); }
             }
@@ -251,11 +261,215 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('btn-generate-create-pdf').addEventListener('click', () => generatePdf(state.createPdf, 'Master.pdf'));
 
+    /* === Tab 5: PDF to PDF === */
+    const pdfToPdfInput = document.getElementById('pdf-to-pdf-input');
+    const pdfToPdfUploadZone = document.getElementById('pdf-to-pdf-upload');
+    const pdfToPdfGrid = document.getElementById('pdf-to-pdf-grid');
+    const pdfToPdfActions = document.getElementById('pdf-to-pdf-actions');
+    const btnPdfUndo = document.getElementById('btn-pdf-undo');
+    const btnPdfRedo = document.getElementById('btn-pdf-redo');
+    const btnPdfZoomIn = document.getElementById('btn-pdf-zoom-in');
+    const btnPdfZoomOut = document.getElementById('btn-pdf-zoom-out');
+    const pdfZoomLevelText = document.getElementById('pdf-zoom-level');
+    let pdfZoomLevel = 100;
+
+    let pdfToPdfUndoStack = [];
+    let pdfToPdfRedoStack = [];
+    const pdfSourceCache = {}; // fileId -> arrayBuffer
+
+    function savePdfToPdfState(isRedoUndo = false) {
+        if(!isRedoUndo) {
+            pdfToPdfUndoStack.push(JSON.parse(JSON.stringify(state.pdfToPdf)));
+            pdfToPdfRedoStack = [];
+            updateUndoRedoBtns();
+        }
+    }
+
+    function updateUndoRedoBtns() {
+        btnPdfUndo.disabled = pdfToPdfUndoStack.length === 0;
+        btnPdfRedo.disabled = pdfToPdfRedoStack.length === 0;
+    }
+
+    btnPdfUndo.addEventListener('click', () => {
+        if(pdfToPdfUndoStack.length > 0) {
+            pdfToPdfRedoStack.push(JSON.parse(JSON.stringify(state.pdfToPdf)));
+            state.pdfToPdf = pdfToPdfUndoStack.pop();
+            updateUndoRedoBtns();
+            renderGrid('pdfToPdf', pdfToPdfGrid, pdfToPdfActions);
+        }
+    });
+
+    btnPdfRedo.addEventListener('click', () => {
+        if(pdfToPdfRedoStack.length > 0) {
+            pdfToPdfUndoStack.push(JSON.parse(JSON.stringify(state.pdfToPdf)));
+            state.pdfToPdf = pdfToPdfRedoStack.pop();
+            updateUndoRedoBtns();
+            renderGrid('pdfToPdf', pdfToPdfGrid, pdfToPdfActions);
+        }
+    });
+
+    btnPdfZoomIn.addEventListener('click', () => {
+        if(pdfZoomLevel < 200) pdfZoomLevel += 25;
+        updatePdfZoom();
+    });
+    btnPdfZoomOut.addEventListener('click', () => {
+        if(pdfZoomLevel > 50) pdfZoomLevel -= 25;
+        updatePdfZoom();
+    });
+
+    function updatePdfZoom() {
+        pdfZoomLevelText.textContent = pdfZoomLevel + '%';
+        pdfToPdfGrid.style.gridTemplateColumns = `repeat(auto-fill, minmax(${150 * (pdfZoomLevel/100)}px, 1fr))`;
+    }
+
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(ev => pdfToPdfUploadZone.addEventListener(ev, preventDefaults, false));
+    pdfToPdfUploadZone.addEventListener('drop', e => handlePdfToPdfFiles(e.dataTransfer.files));
+    pdfToPdfInput.addEventListener('change', e => handlePdfToPdfFiles(e.target.files));
+
+    async function handlePdfToPdfFiles(files) {
+        showLoading('Importing PDF(s)...');
+        savePdfToPdfState();
+        for(let file of files) {
+            if(file.type === 'application/pdf') {
+                try {
+                    const arrayBuffer = await file.arrayBuffer();
+                    const fileId = generateId();
+                    pdfSourceCache[fileId] = arrayBuffer;
+                    
+                    const dataUrl = await fileToDataUrl(file);
+                    const pdf = await pdfjsLib.getDocument(dataUrl).promise;
+                    
+                    const placeholder = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect width='200' height='200' fill='%231e293b'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='14' fill='%2394a3b8'%3ELoading...%3C/text%3E%3C/svg%3E";
+
+                    for(let i=1; i<=pdf.numPages; i++) {
+                        const itemObj = createItemObj(placeholder, `${file.name}_P${i}.pdf`);
+                        itemObj.pdfInfo = { fileId, pageIndex: i - 1 };
+                        itemObj.renderPending = true;
+                        state.pdfToPdf.push(itemObj);
+                    }
+                    
+                    // Render placeholders immediately
+                    renderGrid('pdfToPdf', pdfToPdfGrid, pdfToPdfActions);
+                    
+                    // Async thumbnail generation
+                    renderPdfThumbnailsAsync(pdf, fileId, state.pdfToPdf);
+                } catch(e) { console.error("Error reading PDF:", e); }
+            }
+        }
+        pdfToPdfInput.value = '';
+        hideLoading();
+    }
+
+    async function renderPdfThumbnailsAsync(pdf, fileId, stateArray) {
+        for(let i=1; i<=pdf.numPages; i++) {
+            const item = stateArray.find(it => it.pdfInfo && it.pdfInfo.fileId === fileId && it.pdfInfo.pageIndex === (i-1));
+            if(!item || !item.renderPending) continue;
+
+            try {
+                const page = await pdf.getPage(i);
+                const viewport = page.getViewport({scale: 0.5}); // Fast low res
+                const canvas = document.createElement('canvas');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                await page.render({canvasContext: canvas.getContext('2d'), viewport: viewport}).promise;
+                
+                item.dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+                item.renderPending = false;
+                
+                const imgEl = document.getElementById(`img-prev-${item.id}`);
+                if(imgEl) {
+                    imgEl.src = item.dataUrl;
+                }
+            } catch(e) { console.warn("Thumb render failed", e); }
+            
+            // Yield to avoid freezing on massive files
+            if (i % 3 === 0) await new Promise(r => setTimeout(r, 0));
+        }
+    }
+
+    document.getElementById('btn-pdf-clear').addEventListener('click', () => {
+        savePdfToPdfState();
+        state.pdfToPdf = [];
+        renderGrid('pdfToPdf', pdfToPdfGrid, pdfToPdfActions);
+    });
+    
+    document.getElementById('btn-pdf-delete-selected').addEventListener('click', () => {
+        if(!confirm("Are you sure you want to delete the selected pages?")) return;
+        savePdfToPdfState();
+        state.pdfToPdf = state.pdfToPdf.filter(item => !item.selected);
+        renderGrid('pdfToPdf', pdfToPdfGrid, pdfToPdfActions);
+    });
+
+    document.getElementById('btn-generate-pdf-to-pdf').addEventListener('click', async () => {
+        if(state.pdfToPdf.length === 0) return;
+        showLoading('Exporting PDF... (High Quality)');
+        
+        try {
+            const { PDFDocument } = PDFLib;
+            const finalDoc = await PDFDocument.create();
+            
+            // Cache loaded PDFLib documents to avoid parsing same file multiple times
+            const loadedPdfDocs = {};
+            
+            for(let i = 0; i < state.pdfToPdf.length; i++) {
+                const item = state.pdfToPdf[i];
+                const compression = document.getElementById('pdf-compression').value;
+                
+                document.getElementById('loading-message').textContent = `Processing page ${i+1} of ${state.pdfToPdf.length}...`;
+                
+                const isModified = item.crop || item.texts.length > 0 || item.filters.brightness !== 100 || item.filters.contrast !== 100 || item.filters.grayscale !== 0;
+                
+                if(!isModified && item.pdfInfo && compression !== 'low') {
+                    // Lossless transfer
+                    if(!loadedPdfDocs[item.pdfInfo.fileId]) {
+                        loadedPdfDocs[item.pdfInfo.fileId] = await PDFDocument.load(pdfSourceCache[item.pdfInfo.fileId]);
+                    }
+                    const srcDoc = loadedPdfDocs[item.pdfInfo.fileId];
+                    const [copiedPage] = await finalDoc.copyPages(srcDoc, [item.pdfInfo.pageIndex]);
+                    finalDoc.addPage(copiedPage);
+                } else {
+                    // Fallback to image insertion (Modified or not a PDF source or low compression)
+                    const dataUrl = await renderFinalImage(item);
+                    const isPng = dataUrl.startsWith('data:image/png');
+                    const imgBytes = Uint8Array.from(atob(dataUrl.split(',')[1]), c => c.charCodeAt(0));
+                    
+                    let pdfImage;
+                    if(isPng) pdfImage = await finalDoc.embedPng(imgBytes);
+                    else pdfImage = await finalDoc.embedJpg(imgBytes);
+                    
+                    const page = finalDoc.addPage([pdfImage.width, pdfImage.height]);
+                    page.drawImage(pdfImage, { x: 0, y: 0, width: pdfImage.width, height: pdfImage.height });
+                }
+                
+                // Allow UI to update and prevent freezing on large documents
+                if(i % 5 === 0) await new Promise(r => setTimeout(r, 0));
+            }
+            
+            document.getElementById('loading-message').textContent = 'Saving PDF...';
+            await new Promise(r => setTimeout(r, 50)); // UI paint
+            
+            const pdfBytes = await finalDoc.save();
+            const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = "Converted_Document.pdf";
+            a.click();
+            URL.revokeObjectURL(url);
+        } catch(e) {
+            console.error(e);
+            alert("Error during export: " + e.message);
+        }
+        
+        hideLoading();
+    });
+
     // Enable drag and drop sorting for all grids using SortableJS
     const gridsToMakeSortable = [
         { key: 'imgToPdf', grid: imgToPdfGrid, actions: imgToPdfActions },
         { key: 'pdfToImg', grid: pdfToImgGrid, actions: pdfToImgActions },
-        { key: 'createPdf', grid: createPdfGrid, actions: createPdfActions }
+        { key: 'createPdf', grid: createPdfGrid, actions: createPdfActions },
+        { key: 'pdfToPdf', grid: pdfToPdfGrid, actions: pdfToPdfActions }
     ];
 
     gridsToMakeSortable.forEach(({ key, grid, actions }) => {
@@ -263,6 +477,7 @@ document.addEventListener('DOMContentLoaded', () => {
             animation: 150,
             ghostClass: 'sortable-ghost',
             onEnd: function (evt) {
+                if(key === 'pdfToPdf') savePdfToPdfState();
                 const item = state[key].splice(evt.oldIndex, 1)[0];
                 state[key].splice(evt.newIndex, 0, item);
                 renderGrid(key, grid, actions);
@@ -305,8 +520,16 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if(newItems.length > 0) {
             // Replace the 1 item at replaceItemIndex with N new items
-            state.createPdf.splice(replaceItemIndex, 1, ...newItems);
-            renderGrid('createPdf', createPdfGrid, createPdfActions);
+            const targetStateKey = replaceModal.dataset.targetState || 'createPdf';
+            if (targetStateKey === 'pdfToPdf') savePdfToPdfState();
+            
+            state[targetStateKey].splice(replaceItemIndex, 1, ...newItems);
+            
+            let gridEl, actEl;
+            if(targetStateKey === 'createPdf') { gridEl = createPdfGrid; actEl = createPdfActions; }
+            if(targetStateKey === 'pdfToPdf') { gridEl = pdfToPdfGrid; actEl = pdfToPdfActions; }
+            
+            if(gridEl) renderGrid(targetStateKey, gridEl, actEl);
         }
         replaceInput.value = '';
         hideLoading();
@@ -330,17 +553,35 @@ document.addEventListener('DOMContentLoaded', () => {
         if(stateKey === 'createPdf') {
             totalPagesDisplay.textContent = items.length;
         }
+        
+        // Show/hide delete selected button for pdfToPdf
+        const btnDeleteSelected = document.getElementById('btn-pdf-delete-selected');
+        if(btnDeleteSelected && stateKey === 'pdfToPdf') {
+            const hasSelection = items.some(i => i.selected);
+            if(hasSelection) btnDeleteSelected.classList.remove('hidden');
+            else btnDeleteSelected.classList.add('hidden');
+        }
 
         items.forEach((item, index) => {
             const col = document.createElement('div');
             col.className = 'item-card';
+            if (item.selected) col.classList.add('selected');
+            
+            // Toggle selection on card click
+            col.addEventListener('click', (e) => {
+                if (e.target.closest('.item-overlay') || e.target.closest('.btn-icon')) return; // Ignore button clicks
+                if(stateKey === 'pdfToPdf') {
+                    item.selected = !item.selected;
+                    renderGrid(stateKey, gridEl, actionsEl);
+                }
+            });
             
             // Generate a quick thumbnail applying filters structurally without canvas for speed, or canvas if crop exists
             // To be accurate, we'd render via canvas. For UI speed, we just use the raw image and CSS filters if no crop.
             
             col.innerHTML = `
                 <div class="item-preview">
-                    <img src="${item.dataUrl}" style="filter: brightness(${item.filters.brightness}%) contrast(${item.filters.contrast}%) grayscale(${item.filters.grayscale}%)">
+                    <img id="img-prev-${item.id}" src="${item.dataUrl}" style="filter: brightness(${item.filters.brightness}%) contrast(${item.filters.contrast}%) grayscale(${item.filters.grayscale}%)">
                     <div class="item-overlay">
                         <button class="btn-icon btn-move-left" title="Move Left" ${index === 0 ? 'disabled style="opacity:0.3;cursor:not-allowed;"' : ''}><i class="fa-solid fa-arrow-left"></i></button>
                         <button class="btn-icon btn-move-right" title="Move Right" ${index === items.length - 1 ? 'disabled style="opacity:0.3;cursor:not-allowed;"' : ''}><i class="fa-solid fa-arrow-right"></i></button>
@@ -348,7 +589,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <button class="btn-icon btn-rot-right" title="Rotate Right"><i class="fa-solid fa-rotate-right"></i></button>
                         <button class="btn-icon btn-edit" title="Edit"><i class="fa-solid fa-pen"></i></button>
                         <button class="btn-icon btn-save-pdf" title="Save this as PDF"><i class="fa-solid fa-file-pdf"></i></button>
-                        ${stateKey === 'createPdf' ? `<button class="btn-icon btn-replace" title="Replace"><i class="fa-solid fa-file-import"></i></button>` : ''}
+                        ${(stateKey === 'createPdf' || stateKey === 'pdfToPdf') ? `<button class="btn-icon btn-replace" title="Replace"><i class="fa-solid fa-file-import"></i></button>` : ''}
                         <button class="btn-icon danger btn-delete" title="Remove"><i class="fa-solid fa-trash"></i></button>
                     </div>
                 </div>
@@ -361,6 +602,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const btnMoveLeft = col.querySelector('.btn-move-left');
             if(btnMoveLeft && !btnMoveLeft.disabled) {
                 btnMoveLeft.addEventListener('click', () => {
+                    if(stateKey === 'pdfToPdf') savePdfToPdfState();
                     const movedItem = state[stateKey].splice(index, 1)[0];
                     state[stateKey].splice(index - 1, 0, movedItem);
                     renderGrid(stateKey, gridEl, actionsEl);
@@ -370,6 +612,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const btnMoveRight = col.querySelector('.btn-move-right');
             if(btnMoveRight && !btnMoveRight.disabled) {
                 btnMoveRight.addEventListener('click', () => {
+                    if(stateKey === 'pdfToPdf') savePdfToPdfState();
                     const movedItem = state[stateKey].splice(index, 1)[0];
                     state[stateKey].splice(index + 1, 0, movedItem);
                     renderGrid(stateKey, gridEl, actionsEl);
@@ -377,18 +620,22 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             col.querySelector('.btn-rot-left').addEventListener('click', async () => {
+                if(stateKey === 'pdfToPdf') savePdfToPdfState();
                 showLoading('Rotating...');
                 await rotateItemImage(item, 'left');
                 renderGrid(stateKey, gridEl, actionsEl);
                 hideLoading();
             });
             col.querySelector('.btn-rot-right').addEventListener('click', async () => {
+                if(stateKey === 'pdfToPdf') savePdfToPdfState();
                 showLoading('Rotating...');
                 await rotateItemImage(item, 'right');
                 renderGrid(stateKey, gridEl, actionsEl);
                 hideLoading();
             });
             col.querySelector('.btn-delete').addEventListener('click', () => {
+                if(!confirm("Are you sure you want to remove this page?")) return;
+                if(stateKey === 'pdfToPdf') savePdfToPdfState();
                 state[stateKey].splice(index, 1);
                 renderGrid(stateKey, gridEl, actionsEl);
             });
@@ -405,9 +652,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
-            if(stateKey === 'createPdf') {
+            if(stateKey === 'createPdf' || stateKey === 'pdfToPdf') {
                 col.querySelector('.btn-replace').addEventListener('click', () => {
                     replaceItemIndex = index;
+                    // For replace modal, we need to know which state key it's targeting
+                    replaceModal.dataset.targetState = stateKey;
                     replaceModal.classList.remove('hidden');
                 });
             }
@@ -594,7 +843,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let gridEl, actEl;
         if(state.editor.activeTabState === 'imgToPdf') { gridEl=imgToPdfGrid; actEl=imgToPdfActions; }
         else if(state.editor.activeTabState === 'pdfToImg') { gridEl=pdfToImgGrid; actEl=pdfToImgActions; }
-        else if(state.editor.activeTabState === 'cameraPdf') { gridEl=cameraGrid; actEl=cameraActions; }
+        else if(state.editor.activeTabState === 'pdfToPdf') { gridEl=pdfToPdfGrid; actEl=pdfToPdfActions; }
         else if(state.editor.activeTabState === 'createPdf') { gridEl=createPdfGrid; actEl=createPdfActions; }
         
         if(gridEl) renderGrid(state.editor.activeTabState, gridEl, actEl);
