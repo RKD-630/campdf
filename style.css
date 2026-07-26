@@ -375,7 +375,7 @@ body {
 /* Items Grid */
 .items-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
     gap: 1.5rem;
     padding-bottom: 2rem;
 }
@@ -1071,5 +1071,43 @@ input[type="color"] {
     
     .main-content {
         padding-bottom: 2rem;
+    }
+}
+
+/* Drag to scroll style */
+.active-drag {
+    cursor: grabbing !important;
+}
+.active-drag * {
+    pointer-events: none !important;
+}
+
+/* Mobile adjustments for 3 column grid */
+@media (max-width: 768px) {
+    .items-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.5rem;
+    }
+    .item-preview {
+        height: 100px;
+    }
+    .item-card .btn-icon {
+        width: 28px;
+        height: 28px;
+        font-size: 0.9rem;
+    }
+    .item-info {
+        padding: 0.4rem;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.2rem;
+    }
+    .item-name {
+        font-size: 0.65rem;
+        width: 100%;
+    }
+    .page-badge {
+        font-size: 0.65rem;
+        padding: 1px 4px;
     }
 }

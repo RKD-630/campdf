@@ -506,12 +506,44 @@ document.addEventListener('DOMContentLoaded', () => {
         new Sortable(grid, {
             animation: 150,
             ghostClass: 'sortable-ghost',
+            delay: 200,
+            delayOnTouchOnly: true,
             onEnd: function (evt) {
                 if(key === 'pdfToPdf') savePdfToPdfState();
                 const item = state[key].splice(evt.oldIndex, 1)[0];
                 state[key].splice(evt.newIndex, 0, item);
                 renderGrid(key, grid, actions);
             }
+        });
+    });
+
+    // Desktop Mouse Drag to Scroll for Tab Panes
+    document.querySelectorAll('.tab-pane').forEach(pane => {
+        let isDown = false;
+        let startY;
+        let scrollTop;
+
+        pane.addEventListener('mousedown', (e) => {
+            if(e.target.closest('button, input, select, .item-overlay')) return;
+            isDown = true;
+            pane.classList.add('active-drag');
+            startY = e.pageY - pane.offsetTop;
+            scrollTop = pane.scrollTop;
+        });
+        pane.addEventListener('mouseleave', () => {
+            isDown = false;
+            pane.classList.remove('active-drag');
+        });
+        pane.addEventListener('mouseup', () => {
+            isDown = false;
+            pane.classList.remove('active-drag');
+        });
+        pane.addEventListener('mousemove', (e) => {
+            if(!isDown) return;
+            e.preventDefault();
+            const y = e.pageY - pane.offsetTop;
+            const walk = (y - startY) * 1.5;
+            pane.scrollTop = scrollTop - walk;
         });
     });
 
