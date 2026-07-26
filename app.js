@@ -522,9 +522,11 @@ document.addEventListener('DOMContentLoaded', () => {
         let isDown = false;
         let startY;
         let scrollTop;
+        let dragged = false;
 
         pane.addEventListener('mousedown', (e) => {
-            if(e.target.closest('button, input, select, .item-overlay')) return;
+            dragged = false;
+            if(e.target.closest('button, input, select, .item-overlay, .item-card')) return;
             isDown = true;
             pane.classList.add('active-drag');
             startY = e.pageY - pane.offsetTop;
@@ -541,10 +543,17 @@ document.addEventListener('DOMContentLoaded', () => {
         pane.addEventListener('mousemove', (e) => {
             if(!isDown) return;
             e.preventDefault();
+            dragged = true;
             const y = e.pageY - pane.offsetTop;
             const walk = (y - startY) * 1.5;
             pane.scrollTop = scrollTop - walk;
         });
+        pane.addEventListener('click', (e) => {
+            if(dragged) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        }, true);
     });
 
     /* === Replace Page Functionality === */

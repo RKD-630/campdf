@@ -1077,9 +1077,8 @@ input[type="color"] {
 /* Drag to scroll style */
 .active-drag {
     cursor: grabbing !important;
-}
-.active-drag * {
-    pointer-events: none !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
 }
 
 /* Mobile adjustments for 3 column grid */
