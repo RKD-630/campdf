@@ -1,347 +1,283 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>All Converter - PremiumImage to PDFImage to PDF Document Tools</title>
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Cropper.js CSS -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
-    <!-- App Styles -->
-    <link rel="stylesheet" href="style.css">
-</head>
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Rkrid — PDF &amp; Image Studio</title>
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'&gt;&lt;rect width='32' height='32' rx='7' fill='%232743e3'/&gt;&lt;path d='M9 22V9h9a4 4 0 0 1 0 8h-9m4-8v14' stroke='white' stroke-width='2.6' fill='none' stroke-linecap='round'/&gt;&lt;/svg&gt;" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&amp;family=IBM+Plex+Mono:wght@500;600&amp;family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&amp;family=Montserrat:ital,wght@0,400;0,700;1,400&amp;family=Open+Sans:ital,wght@0,400;0,700;1,400&amp;family=Roboto:ital,wght@0,400;0,700;1,400&amp;display=swap" rel="stylesheet" />
+
+
+
+
+<link rel="stylesheet" href="style.css" /></head>
 <body>
-    <div class="app-background"></div>
-    <div class="app-container">
-        <!-- Sidebar Navigation -->
-        <nav class="sidebar glass">
-            <div class="logo">
-                <div class="logo-icon-bg"><i class="fa-solid fa-layer-group"></i></div>
-                <h2>
-                    <span id="btn-theme-toggle" style="cursor: pointer; margin-right: 8px;" title="Toggle Theme">
-                        <i class="fa-solid fa-moon"></i>
-                    </span>
-                    All Converter
-                </h2>
-            </div>
-            <div class="bottom-navigation">
-                <ul class="nav-links">
-                    <li class="active" data-tab="tab-img-to-pdf">
-                        <i class="fa-solid fa-file-image"></i>
-                        <span>Image to PDF</span>
-                    </li>
-                    <li data-tab="tab-pdf-to-pdf">
-                        <i class="fa-solid fa-file-pdf"></i>
-                        <span>PDF to PDF</span>
-                    </li>
-                    <li data-tab="tab-pdf-to-img">
-                        <i class="fa-solid fa-file-image"></i>
-                        <span>PDF to Image</span>
-                    </li>
-                    <li data-tab="tab-create-pdf">
-                        <i class="fa-solid fa-folder-plus"></i>
-                        <span>Create PDF</span>
-                    </li>
-                </ul>
-            </div>
-        </nav>
 
-        <!-- Main Content Area -->
-        <main class="main-content">
-            <!-- Tab: Image to PDF -->
-            <section id="tab-img-to-pdf" class="tab-pane active glass-pane">
-                <header class="tab-header">
-                    <h3>Image to PDF</h3>
-                    <p>Convert multiple images into a beautifully formatted PDF document.</p>
-                </header>
-                <div class="content-body">
-                    <div class="upload-zone" id="img-to-pdf-upload">
-                        <div class="upload-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
-                        <p>Drag & drop images here or <strong>browse files</strong></p>
-                        <input type="file" id="img-to-pdf-input" multiple accept="image/*" hidden>
-                    </div>
-                    
-                    <div class="action-bar hidden" id="img-to-pdf-actions">
-                        <span class="file-count"><span id="img-to-pdf-count">0</span> files loaded</span>
-                        <div class="action-buttons">
-                            <button class="btn btn-secondary btn-clear">
-                                <i class="fa-solid fa-trash"></i> Clear All
-                            </button>
-                            <input type="password" id="img-pdf-password" placeholder="4-digit PIN (Optional)" maxlength="4" style="padding: 5px; border-radius: 5px; width: 160px; background: rgba(255,255,255,0.1); color: inherit; border: 1px solid rgba(255,255,255,0.2); font-size: 0.85rem;">
-                            <button class="btn btn-primary" id="btn-generate-img-to-pdf">
-                                <i class="fa-solid fa-file-export"></i> Convert to PDF
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="items-grid" id="img-to-pdf-grid"></div>
-                </div>
-            </section>
-
-            <!-- Tab: PDF to PDF -->
-            <section id="tab-pdf-to-pdf" class="tab-pane hidden glass-pane">
-                <header class="tab-header">
-                    <h3><i class="fa-solid fa-file-pdf"></i> PDF to PDF Converter</h3>
-                    <p>Reorder, edit, and merge PDF pages with zero quality loss.</p>
-                </header>
-                <div class="content-body">
-                    <div class="upload-zone row-layout" id="pdf-to-pdf-upload">
-                        <div class="upload-info">
-                            <div class="upload-icon small"><i class="fa-solid fa-file-pdf"></i></div>
-                            <div>
-                                <h3>Import PDF</h3>
-                                <p>Drag & drop or click to add PDF files</p>
-                            </div>
-                        </div>
-                        <input type="file" id="pdf-to-pdf-input" multiple accept="application/pdf" hidden>
-                        <button class="btn btn-primary btn-outline" onclick="document.getElementById('pdf-to-pdf-input').click()">
-                            <i class="fa-solid fa-plus"></i> Browse
-                        </button>
-                    </div>
-                    
-                    <div class="action-bar hidden" id="pdf-to-pdf-actions" style="flex-wrap: wrap; gap: 10px;">
-                        <div class="toolbar" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                            <button class="btn btn-secondary btn-icon-text" id="btn-pdf-add-more" onclick="document.getElementById('pdf-to-pdf-input').click()">
-                                <i class="fa-solid fa-plus"></i> Add PDF
-                            </button>
-                            <button class="btn btn-secondary btn-icon-text" id="btn-pdf-undo" disabled>
-                                <i class="fa-solid fa-rotate-left"></i> Undo
-                            </button>
-                            <button class="btn btn-secondary btn-icon-text" id="btn-pdf-redo" disabled>
-                                <i class="fa-solid fa-rotate-right"></i> Redo
-                            </button>
-                            <div class="zoom-controls" style="display: flex; align-items: center; gap: 5px; margin-left: 10px;">
-                                <button class="btn btn-icon" id="btn-pdf-zoom-out" title="Zoom Out"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
-                                <span id="pdf-zoom-level">100%</span>
-                                <button class="btn btn-icon" id="btn-pdf-zoom-in" title="Zoom In"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
-                            </div>
-                            <div class="compression-settings" style="display: flex; align-items: center; gap: 5px; margin-left: auto;">
-                                <input type="password" id="pdf-password" placeholder="4-digit PIN (Optional)" maxlength="4" style="padding: 5px; border-radius: 5px; width: 160px; background: rgba(255,255,255,0.1); color: inherit; border: 1px solid rgba(255,255,255,0.2); font-size: 0.85rem;">
-                                <label for="pdf-compression" style="font-size: 0.85rem; font-weight: 500;">Quality:</label>
-                                <select id="pdf-compression" class="form-select" style="padding: 5px; border-radius: 5px; background: rgba(255,255,255,0.1); color: inherit; border: 1px solid rgba(255,255,255,0.2);">
-                                    <option value="high">High (No Loss)</option>
-                                    <option value="medium">Medium</option>
-                                    <option value="low">Low (Compressed)</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="action-buttons" style="margin-left: auto;">
-                            <button class="btn btn-secondary btn-icon-text hidden" id="btn-pdf-delete-selected" style="background: rgba(255,50,50,0.2); color: #ff5555; border: 1px solid rgba(255,50,50,0.3);">
-                                <i class="fa-solid fa-trash-can"></i> Delete Selected
-                            </button>
-                            <button class="btn btn-secondary btn-clear" id="btn-pdf-clear">
-                                <i class="fa-solid fa-trash"></i> Clear
-                            </button>
-                            <button class="btn btn-primary" id="btn-generate-pdf-to-pdf">
-                                <i class="fa-solid fa-file-export"></i> Export PDF
-                            </button>
-                        </div>
-                    </div>
-                    <div class="items-grid sortable-grid" id="pdf-to-pdf-grid"></div>
-                </div>
-            </section>
-
-
-            <!-- Tab: PDF to Image -->
-            <section id="tab-pdf-to-img" class="tab-pane hidden glass-pane">
-                <header class="tab-header">
-                    <h3>PDF to Image</h3>
-                    <p>Extract high-resolution images from any PDF file.</p>
-                </header>
-                <div class="content-body">
-                    <div class="upload-zone" id="pdf-to-img-upload">
-                        <div class="upload-icon"><i class="fa-solid fa-file-pdf"></i></div>
-                        <p>Drag & drop a PDF here or <strong>browse files</strong></p>
-                        <input type="file" id="pdf-to-img-input" accept="application/pdf" hidden>
-                    </div>
-                    <div class="action-bar hidden" id="pdf-to-img-actions">
-                        <span class="file-count"><span id="pdf-to-img-count">0</span> pages extracted</span>
-                        <div class="action-buttons">
-                            <button class="btn btn-secondary btn-clear">
-                                <i class="fa-solid fa-trash"></i> Clear PDF
-                            </button>
-                            <button class="btn btn-primary" id="btn-export-pdf-images">
-                                <i class="fa-solid fa-download"></i> Download All as ZIP
-                            </button>
-                        </div>
-                    </div>
-                    <div class="items-grid" id="pdf-to-img-grid"></div>
-                </div>
-            </section>
-
-
-            <!-- Tab: Create PDF (Advanced) -->
-            <section id="tab-create-pdf" class="tab-pane hidden glass-pane">
-                <header class="tab-header">
-                    <h3>Advanced PDF Builder</h3>
-                    <p>Mix images & PDFs, reorder dynamically, edit pages, and compile a master PDF.</p>
-                </header>
-                <div class="content-body">
-                    <div class="upload-zone row-layout" id="create-pdf-upload">
-                        <div class="upload-info">
-                            <div class="upload-icon small"><i class="fa-solid fa-layer-group"></i></div>
-                            <div>
-                                <h3>Add Media</h3>
-                                <p>Drag & drop or click to add images and PDFs</p>
-                            </div>
-                        </div>
-                        <input type="file" id="create-pdf-input" multiple accept="image/*,application/pdf" hidden>
-                        <button class="btn btn-primary btn-outline" onclick="document.getElementById('create-pdf-input').click()">
-                            <i class="fa-solid fa-plus"></i> Browse
-                        </button>
-                    </div>
-                    <div class="action-bar hidden" id="create-pdf-actions">
-                        <div class="pagination-info">
-                            Pages: <strong><span id="total-pages-display">0</span></strong>
-                        </div>
-                        <div class="action-buttons">
-                            <button class="btn btn-secondary btn-clear">
-                                <i class="fa-solid fa-trash"></i> Clear Assembly
-                            </button>
-                            <button class="btn btn-primary" id="btn-generate-create-pdf">
-                                <i class="fa-solid fa-file-export"></i> Compile Master PDF
-                            </button>
-                        </div>
-                    </div>
-                    <!-- Interactive list/grid with SortableJS -->
-                    <div class="items-grid sortable-grid" id="create-pdf-grid"></div>
-                </div>
-            </section>
-        </main>
+<!-- ================= TOPBAR ================= -->
+<header id="topbar">
+  <div class="brand">
+    <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M7 19V5h7.5a3.5 3.5 0 0 1 0 7H7m3.5-7v14"/></svg></span>
+    <div><div class="brand-name" style="color:var(--accent)">Rkrid</div><div class="brand-tag">Local PDF &amp; Image Studio</div></div>
+  </div>
+  <div class="top-mid">
+    <button class="icon-btn" id="btnUndo" aria-label="Undo" disabled=""></button>
+    <button class="icon-btn" id="btnRedo" aria-label="Redo" disabled=""></button>
+    <div class="seg" role="group" aria-label="View">
+      <button id="viewGrid" class="on" aria-label="Grid view"></button>
+      <button id="viewList" aria-label="List view"></button>
     </div>
+    <div class="seg" role="group" aria-label="Zoom" id="zoomControls">
+      <button id="zoomOut" aria-label="Zoom Out" disabled=""></button>
+      <button id="zoomIn" aria-label="Zoom In" disabled=""></button>
+    </div>
+  </div>
+  <div class="top-right">
+    <button class="icon-btn" id="btnThemeToggle" aria-label="Toggle Theme" title="Toggle Dark/Light Mode"></button>
+    <button class="btn btn-sec btn-sm" id="btnAdd"></button>
+    <button class="btn btn-primary btn-sm" id="btnExport"></button>
+  </div>
+</header>
 
-    <!-- Global Image Editor Modal -->
-    <div id="editor-modal" class="modal-overlay hidden">
-        <div class="modal-content glass-pane">
-            <div class="modal-header">
-                <h2>Photo & Document Editor</h2>
-                <button class="btn-close" id="btn-close-editor"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <div class="editor-layout">
-                <div class="editor-canvas-container">
-                    <div class="canvas-wrapper">
-                        <!-- Used for Cropper.js -->
-                        <img id="editor-image-preview" src="">
-                    </div>
-                </div>
-                <div class="editor-sidebar glass">
-                    <div class="editor-tabs">
-                        <button class="editor-tab active" data-target="adjust">Adjust</button>
-                        <button class="editor-tab" data-target="crop">Crop</button>
-                        <button class="editor-tab" data-target="text">Text</button>
-                    </div>
-                    
-                    <div class="editor-tab-content active" id="editor-panel-adjust">
-                        <div class="control-group">
-                            <div class="flex-between">
-                                <label>Brightness</label>
-                                <span id="val-brightness">100%</span>
-                            </div>
-                            <input type="range" id="filter-brightness" min="0" max="200" value="100">
-                        </div>
-                        <div class="control-group">
-                            <div class="flex-between">
-                                <label>Contrast</label>
-                                <span id="val-contrast">100%</span>
-                            </div>
-                            <input type="range" id="filter-contrast" min="0" max="200" value="100">
-                        </div>
-                        <div class="control-group">
-                            <div class="flex-between">
-                                <label>Grayscale (Scan Mode)</label>
-                                <span id="val-grayscale">0%</span>
-                            </div>
-                            <input type="range" id="filter-grayscale" min="0" max="100" value="0">
-                        </div>
-                        <button class="btn btn-secondary full-width mt-2" id="btn-reset-filters">Reset Filters</button>
-                    </div>
-
-                    <div class="editor-tab-content hidden" id="editor-panel-crop">
-                        <p class="help-text">Select an aspect ratio or crop freely.</p>
-                        <div class="crop-ratios">
-                            <button class="ratio-btn" data-ratio="NaN">Free</button>
-                            <button class="ratio-btn" data-ratio="1">1:1</button>
-                            <button class="ratio-btn" data-ratio="1.33333">4:3</button>
-                            <button class="ratio-btn" data-ratio="1.77777">16:9</button>
-                            <button class="ratio-btn" data-ratio="0.707">A4</button>
-                        </div>
-                        <button class="btn btn-primary full-width mt-2" id="btn-apply-crop">Apply Crop</button>
-                    </div>
-
-                    <div class="editor-tab-content hidden" id="editor-panel-text">
-                        <div class="text-tools">
-                            <input type="text" id="text-input" class="full-width" placeholder="Enter text to overlay...">
-                            <div class="color-pickers mt-2">
-                                <div class="color-field">
-                                    <label>Text</label>
-                                    <input type="color" id="text-color" value="#000000">
-                                </div>
-                                <div class="color-field">
-                                    <label>Background</label>
-                                    <input type="color" id="text-bg-color" value="#ffffff">
-                                </div>
-                            </div>
-                            <button class="btn btn-secondary full-width mt-2" id="btn-add-text"><i class="fa-solid fa-plus"></i> Add Text Box</button>
-                        </div>
-                        
-                        <div class="added-texts mt-2">
-                            <h4>Active Text Elements</h4>
-                            <div id="text-elements-list" class="text-elements-list"></div>
-                        </div>
-                        <p class="help-text note">* Text can be positioned by dragging.</p>
-                    </div>
-
-                    <div class="editor-actions">
-                        <button class="btn btn-secondary" id="btn-cancel-edit">Cancel</button>
-                        <button class="btn btn-primary" id="btn-save-edit">Save Changes</button>
-                    </div>
-                </div>
-            </div>
+<!-- ================= EMPTY STATE ================= -->
+<section id="emptyState">
+  <div>
+    <div class="eyebrow">Merge · Convert · Edit · Export</div>
+    <h1>Drop your PDFs &amp; images <em>on the desk.</em></h1>
+    <p class="lede">Rkrid turns PDFs, photos and scans into one clean, ordered document. Reorder pages, crop, enhance, add text, erase what you don't want — then export as PDF or ZIP.</p>
+    <div class="cta-row">
+      <button class="btn btn-primary" id="btnImportMain"></button>
+      <button class="btn btn-sec" id="btnSample"></button>
+    </div>
+    <div class="fmt-row" aria-label="Supported formats">
+      <span class="fmt">PDF</span><span class="fmt">JPG</span><span class="fmt">PNG</span><span class="fmt">WEBP</span>
+      <span class="fmt">GIF</span><span class="fmt">BMP</span><span class="fmt">TIFF</span><span class="fmt">SVG</span><span class="fmt">HEIC*</span>
+    </div>
+    <p class="privacy-line" id="privacyLine"></p>
+    <div class="flow-steps">
+      <span class="fstep"><b>1</b>Import</span><span class="fstep"><b>2</b>Organize</span>
+      <span class="fstep"><b>3</b>Edit</span><span class="fstep"><b>4</b>Export</span>
+    </div>
+  </div>
+  <div class="tray-zone">
+    <div class="tray-drop" id="trayDrop" role="button" tabindex="0" aria-label="Import files: click or drop files here">
+      <div class="paper-stack" aria-hidden="true">
+        <div class="sheet s1"></div><div class="sheet s2"></div>
+        <div class="sheet s3">
+          <span class="stamp">A4 · READY</span>
+          <div class="sk t"></div><div class="sk a"></div><div class="sk w90"></div><div class="sk w80"></div>
+          <div class="sk w90"></div><div class="sk w60"></div><div class="sk w80"></div>
         </div>
+      </div>
+      <span class="tray-hint">Click or drop files here</span>
     </div>
+    <span class="float-stamp f1">PDF → IMG</span><span class="float-stamp f2">MERGE</span>
+    <span class="float-stamp f3">CROP + ENHANCE</span><span class="float-stamp f4">IMG → PDF</span>
+  </div>
+</section>
 
-    <!-- Replace Page Modal -->
-    <div id="replace-modal" class="modal-overlay hidden">
-        <div class="modal-content glass-pane small-modal">
-            <div class="modal-header">
-                <h2>Replace Page</h2>
-                <button class="btn-close" id="btn-close-replace"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <div class="upload-zone small" id="replace-upload">
-                <i class="fa-solid fa-file-import"></i>
-                <p>Click to upload a new Image or PDF</p>
-                <input type="file" id="replace-input" accept="image/*,application/pdf" hidden>
-            </div>
+<!-- ================= WORKSPACE ================= -->
+<main id="workspace" hidden="">
+  <div class="ws-head">
+    <h2>Your document</h2>
+    <span id="docMeta" class="mono"></span>
+    <span class="spacer"></span>
+    <label class="selall"><span class="pcheck"><input type="checkbox" id="selAll" /><span class="box"></span></span>Select all</label>
+  </div>
+  <p class="ws-tip"><span class="desk-only">Drag cards (or the ⠿ handle) to reorder · drop a file onto a page to replace it · </span>Long-press a card on touch to drag.</p>
+  <div id="pageArea" class="grid" role="list" aria-label="Document pages"></div>
+</main>
+
+<!-- ================= BULK BAR ================= -->
+<div id="bulkBar" hidden="">
+  <span class="bb-count" id="bulkCount">0 selected</span>
+  <button class="bb-btn" id="bulkExport"></button>
+  <button class="bb-btn" id="bulkLeft" aria-label="Move selected left"></button>
+  <button class="bb-btn" id="bulkRight" aria-label="Move selected right"></button>
+  <button class="bb-btn danger" id="bulkRemove"></button>
+  <button class="bb-btn" id="bulkClear" aria-label="Clear selection"></button>
+</div>
+
+<!-- ================= MOBILE BAR ================= -->
+<nav id="mobilebar" aria-label="Main actions"><div class="mb-grid" style="grid-template-columns:repeat(6,1fr)">
+  <button class="mb-btn" id="mbPages"></button>
+  <button class="mb-btn" id="mbAdd"></button>
+  <button class="mb-btn" id="mbTools"></button>
+  <button class="mb-btn" id="mbAdjust"></button>
+  <button class="mb-btn" id="mbText"></button>
+  <button class="mb-btn" id="mbExport"></button>
+</div></nav>
+
+<!-- ================= EDITOR ================= -->
+<section id="editor" hidden="" aria-label="Page editor">
+  <div class="ed-top">
+    <button class="icon-btn" id="edBack" aria-label="Back to all pages"></button>
+    <div class="ed-title"><b id="edTitle">Page</b><span id="edSub"></span></div>
+    <div class="ed-nav">
+      <button class="icon-btn" id="edPrev" aria-label="Previous page"></button>
+      <button class="icon-btn" id="edNext" aria-label="Next page"></button>
+    </div>
+    <button class="icon-btn" id="edUndo" aria-label="Undo"></button>
+    <button class="icon-btn" id="edRedo" aria-label="Redo"></button>
+    <button class="btn btn-primary btn-sm" id="edDone"></button>
+  </div>
+  <div class="ed-chips" id="edChips"></div>
+  <div class="ed-body">
+    <div class="ed-rail" id="edRail" aria-label="Pages"></div>
+    <div class="ed-stage" id="edStage">
+      <div id="canvasWrap">
+        <canvas id="mainCanvas"></canvas>
+        <div id="layer" data-tool="">
+          <canvas id="eraseCanvas"></canvas>
         </div>
+      </div>
     </div>
+    <aside class="ed-panel" id="edPanel">
+      <div class="p-sec" id="secOrder">
+        <h4>Page order</h4>
+        <div class="order-row">
+          <button class="btn btn-sec btn-sm" id="ordLeft"></button>
+          <span class="pos" id="ordPos">1 / 1</span>
+          <button class="btn btn-sec btn-sm" id="ordRight"></button>
+        </div>
+      </div>
+      <div class="p-sec" id="secTools">
+        <h4>Tools</h4>
+        <div class="tool-grid">
+          <button class="tool-btn" id="toolCrop" data-tool="crop"></button>
+          <button class="tool-btn" id="toolText" data-tool="text"></button>
+          <button class="tool-btn" id="toolErase" data-tool="erase"></button>
+          <button class="tool-btn" id="toolPgNum" data-tool="pgnum"></button>
+        </div>
+        <div class="order-row" style="margin-top:10px">
+          <button class="btn btn-sec btn-sm" id="btnEdReplace" style="flex:1"></button>
+        </div>
+        <div class="order-row" style="margin-top:7px">
+          <button class="btn btn-sec btn-sm" id="btnEdDup" style="flex:1"></button>
+          <button class="btn btn-sec btn-sm danger" id="btnEdRemove" style="flex:1;color:var(--danger)"></button>
+        </div>
+      </div>
+      <div class="p-sec" id="secAdjust"></div>
+      <div class="p-sec" id="secCrop" hidden="">
+        <h4>Crop</h4>
+        <div class="presets" id="cropPresets"></div>
+        <div class="order-row" style="margin-bottom:8px">
+          <button class="btn btn-sec btn-sm" id="cropRotL" style="flex:1" title="Rotate left" aria-label="Rotate left"></button>
+          <button class="btn btn-sec btn-sm" id="cropRotR" style="flex:1" title="Rotate right" aria-label="Rotate right"></button>
+        </div>
+        <div class="order-row">
+          <button class="btn btn-primary btn-sm" id="cropApply" style="flex:1"></button>
+          <button class="btn btn-sec btn-sm" id="cropCancel">Cancel</button>
+          <button class="btn btn-ghost btn-sm" id="cropReset">Reset</button>
+        </div>
+      </div>
+      <div class="p-sec" id="secText" hidden="">
+        <h4>Text</h4>
+        <div id="textContent"></div>
+      </div>
+      <div class="p-sec" id="secPgNum" hidden="">
+        <h4>Page Numbers</h4>
+        <div class="ctl-row">
+          <label>Mode</label>
+          <select id="pnMode" style="flex:1" class="inp">
+            <option value="auto">Automatic</option>
+            <option value="manual">Manual</option>
+          </select>
+        </div>
+        <div class="ctl-row" id="pnFormatRow" hidden="">
+          <label>Format</label>
+          <select id="pnFormat" style="flex:1" class="inp">
+            <option value="Page {n}">Page 1</option>
+            <option value="Page {n} of {t}">Page 1 of 5</option>
+            <option value="- {n} -">- 1 -</option>
+            <option value="{n}">1</option>
+            <option value="{f} - {n}">Filename - 1</option>
+          </select>
+        </div>
+        <div class="ctl-row">
+          <label>Align</label>
+          <div class="seg-mini">
+            <button id="pnAl" aria-label="Align left"></button>
+            <button id="pnAc" aria-label="Align center" class="on"></button>
+            <button id="pnAr" aria-label="Align right"></button>
+          </div>
+        </div>
+        <div class="ctl-row">
+          <label>Position</label>
+          <select id="pnPos" style="flex:1" class="inp">
+            <option value="bottom">Bottom</option>
+            <option value="top">Top</option>
+          </select>
+        </div>
+        <div class="ctl-row">
+          <label>Margin</label>
+          <input type="range" id="pnMargin" min="1" max="25" value="5" style="flex:1" />
+          <span class="adj-val" id="pnMarginVal" style="width:28px">5%</span>
+        </div>
+        <div class="ctl-row">
+          <label>Nudge</label>
+          <div class="seg-mini">
+            <button id="pnMvU" aria-label="Up"></button>
+            <button id="pnMvD" aria-label="Down"></button>
+            <button id="pnMvL" aria-label="Left"></button>
+            <button id="pnMvR" aria-label="Right"></button>
+          </div>
+        </div>
+        <div class="ctl-row">
+          <label>Color</label>
+          <input type="color" id="pnColor" value="#171b26" style="width:30px;height:30px;padding:0;border:none;cursor:pointer" />
+        </div>
+        <div class="ctl-row">
+          <label>Shadow</label>
+          <div style="display:flex;align-items:center;gap:8px">
+            <input type="color" id="pnShadow" value="#ffffff" style="width:30px;height:30px;padding:0;border:none;cursor:pointer" />
+            <button class="btn btn-ghost btn-sm" id="pnShadowClear" style="padding:0 6px">Clear</button>
+          </div>
+        </div>
+        <div class="order-row" style="margin-top:10px">
+          <button class="btn btn-primary btn-sm" id="pnApplyAll" style="flex:1">Apply All</button>
+          <button class="btn btn-sec btn-sm" id="pnApplySel" style="flex:1">Selected</button>
+        </div>
+        <p class="panel-hint" style="margin-top:10px;font-size:12px;color:var(--ink3);line-height:1.4">Added as text boxes. You can edit them later using the Text tool.</p>
+      </div>
+      <div class="p-sec" id="secErase" hidden="">
+        <h4>Erase</h4>
+        <div id="eraseContent"></div>
+      </div>
+    </aside>
+  </div>
+</section>
 
-    <!-- Hidden Canvas for Processing -->
-    <div id="hidden-workspace" style="display:none;"></div>
+<!-- ================= EXPORT MODAL ================= -->
+<div class="overlay" id="exportModal" hidden=""><div class="modal" role="dialog" aria-modal="true" aria-label="Export">
+  <div class="modal-h"><h3 id="expTitle">Save / Export</h3><button class="icon-btn" data-close="" aria-label="Close"></button></div>
+  <div class="modal-b" id="expBody"></div>
+</div></div>
 
-    <!-- Loading Overlay -->
-    <div id="loading-overlay" class="loading-overlay hidden">
-        <div class="spinner"></div>
-        <h3 id="loading-message">Processing...</h3>
-    </div>
+<!-- ================= REPLACE PICKER ================= -->
+<div class="overlay" id="pickerModal" hidden=""><div class="modal" role="dialog" aria-modal="true" aria-label="Choose pages">
+  <div class="modal-h"><h3>Replace with…</h3><button class="icon-btn" data-close="" aria-label="Close"></button></div>
+  <div class="modal-b">
+    <p style="font-size:13.5px;color:var(--ink2);margin-bottom:12px">This PDF has several pages. Pick which one(s) should take the page's place.</p>
+    <div id="pickerGrid"></div>
+  </div>
+  <div class="modal-f">
+    <label class="selall" style="margin-right:auto"><span class="pcheck"><input type="checkbox" id="pickAll" checked="" /><span class="box"></span></span>All pages</label>
+    <button class="btn btn-ghost" data-close="">Cancel</button>
+    <button class="btn btn-primary" id="pickConfirm"></button>
+  </div>
+</div></div>
 
-    <!-- Scripts -->
-    <script async src="https://docs.opencv.org/4.8.0/opencv.js" onload="window.onOpenCvReadyCallback && window.onOpenCvReadyCallback();" type="text/javascript"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script>
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-    </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    
-    <!-- App Logic -->
-    <script src="app.js"></script>
-</body>
-</html>
+<!-- hosts -->
+<div id="sheetHost" hidden=""></div>
+<div id="toasts" aria-live="polite"></div>
+<div id="loader" hidden=""><div class="loader-card"><div class="spinner"></div><h4 id="loaderLabel">Working…</h4><div class="bar striped"><i id="loaderBar"></i></div></div></div>
+<div id="dropVeil" hidden=""><div class="inner">Drop files to import ↓</div></div>
+
+<input type="file" id="fileImport" multiple="" hidden="" accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,.bmp,.tif,.tiff,.svg,.heic,.heif,application/pdf,image/*" />
+<input type="file" id="fileReplace" multiple="" hidden="" accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,.bmp,.tif,.tiff,.svg,.heic,.heif,application/pdf,image/*" />
+<input type="file" id="fileCamera" hidden="" accept="image/*" capture="environment" />
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="script.js"></script></body></html>
