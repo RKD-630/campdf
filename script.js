@@ -1069,7 +1069,9 @@ async function generateExport(){
       }
       setP(0.94,'Generating PDF…');
       blob=new Blob([await doc.save()],{type:'application/pdf'});
-      name='rkrid-document.pdf';
+      let counter = parseInt(localStorage.getItem('rkrid-export-counter') || '1', 10);
+      localStorage.setItem('rkrid-export-counter', counter + 1);
+      name=`rkrid-document-${counter}.pdf`;
     } else {
       const zip=new JSZip(), w={low:1000,medium:1600,high:2200}[expOpts.zipq], q={low:.7,medium:.85,high:.92}[expOpts.zipq];
       for(let i=0;i<n;i++){
@@ -1079,7 +1081,9 @@ async function generateExport(){
       }
       setP(0.72,'Preparing ZIP…');
       blob=await zip.generateAsync({type:'blob'},m=>setP(0.72+m.percent/100*0.26));
-      name='rkrid-pages.zip';
+      let counter = parseInt(localStorage.getItem('rkrid-export-counter') || '1', 10);
+      localStorage.setItem('rkrid-export-counter', counter + 1);
+      name=`rkrid-pages-${counter}.zip`;
     }
     setP(1,'Done');
     lastExport={blob,name};
