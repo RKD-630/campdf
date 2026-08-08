@@ -1014,18 +1014,18 @@ function buildExportBody(){
       <button class="opt-card ${expOpts.format==='pdf'?'on':''}" data-x="format" data-v="pdf">${ic('file')}<span><b>Save as PDF</b><span>One merged PDF document</span></span></button>
       <button class="opt-card ${expOpts.format==='zip'?'on':''}" data-x="format" data-v="zip">${ic('archive')}<span><b>Save as ZIP</b><span>Each page as an image</span></span></button></div></div>
     <div id="expPdfOpts" ${expOpts.format!=='pdf'?'hidden':''}>
-      <div class="opt-group"><h5>PDF quality</h5><div class="seg-wide">
-        ${['standard','high','maximum'].map(q=>`<button class="chip ${expOpts.pdfq===q?'on':''}" data-x="pdfq" data-v="${q}">${q[0].toUpperCase()+q.slice(1)}</button>`).join('')}</div></div>
-      <div class="opt-group"><h5>Page size</h5><div class="seg-wide">
-        ${[['original','Original'],['a4','A4'],['letter','Letter'],['fit','Fit to content']].map(([v,l])=>`<button class="chip ${expOpts.size===v?'on':''}" data-x="size" data-v="${v}">${l}</button>`).join('')}</div>
+      <div class="opt-group"><h5>PDF quality</h5><div class="opt-cards" style="grid-template-columns: repeat(3, 1fr)">
+        ${[['standard','Standard'],['high','High'],['maximum','Maximum']].map(([v,l])=>`<button class="opt-card ${expOpts.pdfq===v?'on':''}" data-x="pdfq" data-v="${v}" style="justify-content:center;padding:12px 6px"><b>${l}</b></button>`).join('')}</div></div>
+      <div class="opt-group"><h5>Page size</h5><div class="opt-cards">
+        ${[['original','Original'],['a4','A4'],['letter','Letter'],['fit','Fit to content']].map(([v,l])=>`<button class="opt-card ${expOpts.size===v?'on':''}" data-x="size" data-v="${v}" style="justify-content:center;padding:12px 6px"><b>${l}</b></button>`).join('')}</div>
         <div style="margin-top:10px;"><label style="display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--ink);cursor:pointer;font-weight:500;"><input type="checkbox" id="chkUniform" ${expOpts.uniformSize?'checked':''}> Force all pages to match first page size</label></div>
       </div>
-      <div class="opt-group" id="orientGroup" ${['original','fit'].includes(expOpts.size)?'hidden':''}><h5>Orientation</h5><div class="seg-wide">
-        ${[['auto','Automatic'],['portrait','Portrait'],['landscape','Landscape']].map(([v,l])=>`<button class="chip ${expOpts.orient===v?'on':''}" data-x="orient" data-v="${v}">${l}</button>`).join('')}</div></div>
+      <div class="opt-group" id="orientGroup" ${['original','fit'].includes(expOpts.size)?'hidden':''}><h5>Orientation</h5><div class="opt-cards" style="grid-template-columns: repeat(3, 1fr)">
+        ${[['auto','Automatic'],['portrait','Portrait'],['landscape','Landscape']].map(([v,l])=>`<button class="opt-card ${expOpts.orient===v?'on':''}" data-x="orient" data-v="${v}" style="justify-content:center;padding:12px 6px"><b>${l}</b></button>`).join('')}</div></div>
     </div>
     <div id="expZipOpts" ${expOpts.format!=='zip'?'hidden':''}>
-      <div class="opt-group"><h5>Image quality</h5><div class="seg-wide">
-        ${[['low','Low'],['medium','Medium'],['high','High']].map(([v,l])=>`<button class="chip ${expOpts.zipq===v?'on':''}" data-x="zipq" data-v="${v}">${l}</button>`).join('')}</div></div>
+      <div class="opt-group"><h5>Image quality</h5><div class="opt-cards" style="grid-template-columns: repeat(3, 1fr)">
+        ${[['low','Low'],['medium','Medium'],['high','High']].map(([v,l])=>`<button class="opt-card ${expOpts.zipq===v?'on':''}" data-x="zipq" data-v="${v}" style="justify-content:center;padding:12px 6px"><b>${l}</b></button>`).join('')}</div></div>
     </div>
     <button class="btn btn-primary btn-block" id="btnGenerate" style="height:48px;font-size:15.5px">${ic('download')} ${expOpts.format==='pdf'?'Export PDF':'Export ZIP'} · ${n} page${n===1?'':'s'}</button>
     <div class="exp-prog" id="expProg" hidden><div class="bar striped"><i id="expBar"></i></div><div class="prog-label" id="expProgLabel"></div></div>`;

@@ -238,16 +238,18 @@ img,canvas,svg{display:block;max-width:100%}
   box-shadow:0 20px 44px rgba(15,20,35,.3)!important;opacity:.96;transition:none}
 /* bulk bar */
 #bulkBar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--mbar) + 14px);z-index:70;
-  display:flex;align-items:center;gap:4px;background:var(--ink);color:#fff;border-radius:15px;padding:8px 10px;
+  display:flex;align-items:center;gap:4px;background:var(--panel);color:var(--ink);border-radius:15px;padding:8px 10px;
+  border:1px solid var(--line);
   box-shadow:0 14px 34px rgba(15,20,35,.35);animation:slideUp .28s var(--ease);max-width:calc(100vw - 20px);flex-wrap:wrap;justify-content:center}
 body:not(.has-doc) #bulkBar{bottom:18px}
 @keyframes slideUp{from{opacity:0;transform:translate(-50%,16px)}to{opacity:1;transform:translate(-50%,0)}}
-#bulkBar .bb-count{font-family:var(--mono);font-size:12.5px;padding:0 10px;color:#c8cde0;white-space:nowrap}
+#bulkBar .bb-count{font-family:var(--mono);font-size:12.5px;padding:0 10px;color:var(--ink2);white-space:nowrap}
 .bb-btn{display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 12px;border-radius:10px;
-  font-size:13px;font-weight:600;color:#fff;transition:background .13s}
+  font-size:13px;font-weight:600;color:var(--ink);transition:background .13s}
 .bb-btn svg{width:16px;height:16px}
-.bb-btn:hover{background:rgba(255,255,255,.14)}
-.bb-btn.danger:hover{background:var(--danger)}
+.bb-btn:hover{background:color-mix(in srgb,var(--ink) 8%,transparent)}
+.bb-btn.danger{color:var(--danger)}
+.bb-btn.danger:hover{background:var(--danger-soft)}
 .bb-btn .lbl{display:inline}
 
 /* ============ 6. MOBILE BAR ============ */
