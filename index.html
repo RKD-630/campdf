@@ -31,26 +31,8 @@
       <button id="zoomIn" aria-label="Zoom In" disabled=""></button>
     </div>
   </div>
-  <div class="top-right" style="position: relative;">
+  <div class="top-right">
     <button class="icon-btn" id="btnThemeToggle" aria-label="Toggle Theme" title="Toggle Dark/Light Mode"></button>
-    <button class="icon-btn" id="btnSettingsToggle" aria-label="Settings" title="Settings"></button>
-
-    <div id="settingsDropdown" class="glass-panel" style="display: none; position: absolute; top: 100%; right: 0; margin-top: 8px; padding: 16px; border-radius: 8px; z-index: 1000; width: 220px; flex-direction: column; gap: 16px; background: var(--surface); box-shadow: 0 8px 24px rgba(0,0,0,0.15); border: 1px solid var(--border);">
-      <div>
-        <label for="appZoomSlider" style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px; font-weight: 500; color: var(--text);">
-          <span>App Zoom</span>
-          <span id="appZoomVal">100%</span>
-        </label>
-        <input type="range" id="appZoomSlider" min="100" max="140" step="5" value="100" style="width: 100%; accent-color: var(--accent);">
-      </div>
-      <div>
-        <label for="appFontSlider" style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px; font-weight: 500; color: var(--text);">
-          <span>Font Size</span>
-          <span id="appFontVal">100%</span>
-        </label>
-        <input type="range" id="appFontSlider" min="100" max="150" step="5" value="100" style="width: 100%; accent-color: var(--accent);">
-      </div>
-    </div>
     <button class="btn btn-sec btn-sm" id="btnAdd"></button>
     <button class="btn btn-primary btn-sm" id="btnExport"></button>
   </div>
