@@ -41,7 +41,8 @@ camera:'<rect x="2.5" y="7" width="19" height="13" rx="2"/><path d="M8.5 7 10 4.
 blank:'<rect x="4.5" y="2.5" width="15" height="19" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/>',
 sparkle:'<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9Z"/>',
 rotL:'<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>',
-rotR:'<path d="M21 12a9 9 0 1 1-9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>'};
+rotR:'<path d="M21 12a9 9 0 1 1-9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>',
+settings:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1Z"/>'};
 const ic=(n,cls='')=>`<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n]}</svg>`;
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
@@ -1162,6 +1163,40 @@ function wireStatic(){
     localStorage.setItem('bindery-theme', newTheme);
     updateThemeIcon(newTheme);
   });
+
+  /* settings toggle */
+  const btnSettingsToggle = $('#btnSettingsToggle');
+  if(btnSettingsToggle) {
+    btnSettingsToggle.innerHTML = ic('settings');
+    const drop = $('#settingsDropdown');
+    btnSettingsToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      drop.style.display = drop.style.display === 'none' ? 'flex' : 'none';
+    });
+    document.addEventListener('click', (e) => {
+      if(!btnSettingsToggle.contains(e.target) && !drop.contains(e.target)){
+        drop.style.display = 'none';
+      }
+    });
+    
+    /* zoom application */
+    const zoomSlider = $('#appZoomSlider');
+    const zoomVal = $('#appZoomVal');
+    zoomSlider?.addEventListener('input', (e) => {
+      const v = e.target.value;
+      zoomVal.textContent = v + '%';
+      document.body.style.zoom = v / 100;
+    });
+
+    /* font size */
+    const fontSlider = $('#appFontSlider');
+    const fontVal = $('#appFontVal');
+    fontSlider?.addEventListener('input', (e) => {
+      const v = e.target.value;
+      fontVal.textContent = v + '%';
+      document.documentElement.style.fontSize = (16 * (v / 100)) + 'px';
+    });
+  }
   /* icons into buttons */
   $('#btnUndo').innerHTML=ic('undo'); $('#btnRedo').innerHTML=ic('redo');
   $('#edUndo').innerHTML=ic('undo'); $('#edRedo').innerHTML=ic('redo');
