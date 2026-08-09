@@ -568,7 +568,18 @@ function setTool(t){
   $$('.tool-btn').forEach(b=>b.classList.toggle('on',b.dataset.tool===t));
   $$('#edChips .chip').forEach(c=>c.classList.toggle('on',c.dataset.tool===t));
   eraseCanvas.style.pointerEvents=t==='erase'?'none':'';
-  if(t==='crop') initCropBox();
+  if(t==='crop') {
+    initCropBox();
+    if(isNarrow() && !$('#mobCropBar')) {
+      const bar = document.createElement('div');
+      bar.id = 'mobCropBar';
+      bar.style.cssText = 'position:fixed; bottom:24px; left:50%; transform:translateX(-50%); display:flex; gap:12px; background:var(--surface); padding:8px 12px; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.3); z-index:200; border:1px solid var(--border);';
+      bar.innerHTML = `<button class="btn btn-sec btn-sm" id="mobCropCancel" style="flex:1">Cancel</button><button class="btn btn-primary btn-sm" id="mobCropApply" style="flex:1">Apply Crop</button>`;
+      document.body.appendChild(bar);
+      $('#mobCropCancel').onclick = () => setTool('');
+      $('#mobCropApply').onclick = () => applyCrop();
+    }
+  }
   if(t!=='text'){ selectedTextId=null; positionTextBoxes(); syncTextPanel(); }
   else {
     const p = currentPage();
@@ -589,7 +600,7 @@ function initCropBox(){
   box.addEventListener('pointerdown',cropDown);
   $$('#cropPresets .preset').forEach(b=>b.classList.toggle('on',b.dataset.a==='0'));
 }
-function removeCropBox(){ $('#cropBox')?.remove(); cropPx=null; }
+function removeCropBox(){ $('#cropBox')?.remove(); $('#mobCropBar')?.remove(); cropPx=null; }
 function paintCropBox(){ const b=$('#cropBox'); if(!b||!cropPx) return;
   b.style.left=cropPx.x+'px'; b.style.top=cropPx.y+'px'; b.style.width=cropPx.w+'px'; b.style.height=cropPx.h+'px'; }
 function cropDown(e){
