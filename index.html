@@ -1,283 +1,319 @@
-<!DOCTYPE html><html lang="en"><head>
-<meta charset="utf-8" />
+<!DOCTYPE html><html lang="en" data-theme="light"><head>
+<meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Rkrid — PDF &amp; Image Studio</title>
-<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'&gt;&lt;rect width='32' height='32' rx='7' fill='%232743e3'/&gt;&lt;path d='M9 22V9h9a4 4 0 0 1 0 8h-9m4-8v14' stroke='white' stroke-width='2.6' fill='none' stroke-linecap='round'/&gt;&lt;/svg&gt;" />
+<title>PDF Converter — Local Page Editor</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=&quot;http://www.w3.org/2000/svg&quot; viewBox=&quot;0 0 32 32&quot;%3E%3Crect width=&quot;32&quot; height=&quot;32&quot; rx=&quot;7&quot; fill=&quot;%23ef4823&quot;/%3E%3Cpath d=&quot;M9 6h10l5 5v15H9z&quot; fill=&quot;white&quot;/%3E%3Crect x=&quot;12&quot; y=&quot;16&quot; width=&quot;9&quot; height=&quot;2&quot; fill=&quot;%23ef4823&quot;/%3E%3Crect x=&quot;12&quot; y=&quot;20&quot; width=&quot;6&quot; height=&quot;2&quot; fill=&quot;%23ef4823&quot;/%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&amp;family=IBM+Plex+Mono:wght@500;600&amp;family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&amp;family=Montserrat:ital,wght@0,400;0,700;1,400&amp;family=Open+Sans:ital,wght@0,400;0,700;1,400&amp;family=Roboto:ital,wght@0,400;0,700;1,400&amp;display=swap" rel="stylesheet" />
-
-
-
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&amp;family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Roboto:ital,wght@0,400;0,700;1,400&amp;family=Open+Sans:ital,wght@0,400;0,700;1,400&amp;family=Poppins:ital,wght@0,400;0,700;1,400&amp;family=Montserrat:ital,wght@0,400;0,700;1,400&amp;display=swap" rel="stylesheet" />
 
 <link rel="stylesheet" href="style.css" /></head>
 <body>
 
+<!-- ================= ICONS ================= -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-import" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v10m0 0 4-4m-4 4L8 9"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></g></symbol>
+<symbol id="i-addpage" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 12v6m-3-3h6"/></g></symbol>
+<symbol id="i-edit" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9a2.12 2.12 0 0 0-3-3L5 17l-1 4z"/><path d="m13.5 6.5 3 3"/></g></symbol>
+<symbol id="i-undo" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 14-5-5 5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></g></symbol>
+<symbol id="i-redo" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/></g></symbol>
+<symbol id="i-eye" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></g></symbol>
+<symbol id="i-save" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l3 3v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M8 3v5h7V3"/><path d="M8 21v-7h8v7"/></g></symbol>
+<symbol id="i-sun" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></g></symbol>
+<symbol id="i-moon" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5z"/></symbol>
+<symbol id="i-left" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m14 6-6 6 6 6"/></symbol>
+<symbol id="i-right" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m10 6 6 6-6 6"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-swap" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h13m0 0-3-3m3 3-3 3"/><path d="M20 17H7m0 0 3 3m-3-3 3-3"/></g></symbol>
+<symbol id="i-copy" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></g></symbol>
+<symbol id="i-trash" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m3 0v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7"/><path d="M10 11v6m4-6v6"/></g></symbol>
+<symbol id="i-rotcw" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4v6h-6"/><path d="M21 10a9 9 0 1 0-.5 5"/></g></symbol>
+<symbol id="i-rotccw" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4v6h6"/><path d="M3 10a9 9 0 1 1 .5 5"/></g></symbol>
+<symbol id="i-crop" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></g></symbol>
+<symbol id="i-sliders" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 8h10m4 0h2M4 16h4m4 0h8"/><circle cx="16" cy="8" r="2.4"/><circle cx="10" cy="16" r="2.4"/></g></symbol>
+<symbol id="i-spark" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9zM19 16l.9 2.1L22 19l-2.1.9L19 22l-.9-2.1L16 19l2.1-.9z"/></symbol>
+<symbol id="i-type" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7V4h14v3"/><path d="M12 4v16m-3 0h6"/></g></symbol>
+<symbol id="i-x" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M6 6l12 12M18 6 6 18"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.5 5 5 10-11"/></symbol>
+<symbol id="i-alert" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2.5 20h19L12 3z"/><path d="M12 10v4m0 3.2v.05"/></g></symbol>
+<symbol id="i-zoomin" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3M8 11h6m-3-3v6"/></g></symbol>
+<symbol id="i-zoomout" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3M8 11h6"/></g></symbol>
+<symbol id="i-fit" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></g></symbol>
+<symbol id="i-arrange" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/><path d="M13 6h5m0 0v5m-5 2H8m0 0v-5" stroke-linecap="round"/></g></symbol>
+<symbol id="i-eraser" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m7 21-4-4 10-10 6 6-6 6H7z"/><path d="m11 9 4 4"/><path d="M18 21h4"/></g></symbol>
+<symbol id="i-pipette" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m14 2 6 6-3 3-1-1-2 2 1 1-6 6H5v-4l6-6 1 1 2-2-1-1 3-3z"/><path d="m5 19 3 3"/></g></symbol>
+</defs></svg>
+
+<div id="libWarn" hidden="">⚠ Core libraries failed to load (PDF.js / PDF-Lib). Check your internet connection and reload.</div>
+
 <!-- ================= TOPBAR ================= -->
 <header id="topbar">
   <div class="brand">
-    <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M7 19V5h7.5a3.5 3.5 0 0 1 0 7H7m3.5-7v14"/></svg></span>
-    <div><div class="brand-name" style="color:var(--accent)">Rkrid</div><div class="brand-tag">Local PDF &amp; Image Studio</div></div>
+    <div class="brand-mark">PDF</div>
+    <div class="brand-text"><strong>PDF Converter</strong><span>local · no upload</span></div>
   </div>
-  <div class="top-mid">
-    <button class="icon-btn" id="btnUndo" aria-label="Undo" disabled=""></button>
-    <button class="icon-btn" id="btnRedo" aria-label="Redo" disabled=""></button>
-    <div class="seg" role="group" aria-label="View">
-      <button id="viewGrid" class="on" aria-label="Grid view"></button>
-      <button id="viewList" aria-label="List view"></button>
-    </div>
-    <div class="seg" role="group" aria-label="Zoom" id="zoomControls">
-      <button id="zoomOut" aria-label="Zoom Out" disabled=""></button>
-      <button id="zoomIn" aria-label="Zoom In" disabled=""></button>
-    </div>
-  </div>
-  <div class="top-right">
-    <button class="icon-btn" id="btnThemeToggle" aria-label="Toggle Theme" title="Toggle Dark/Light Mode"></button>
-    <button class="btn btn-sec btn-sm" id="btnAdd"></button>
-    <button class="btn btn-primary btn-sm" id="btnExport"></button>
-  </div>
+  <div id="docStats" class="mono">Pages: 0 | Files: 0 | Size: 0 B</div>
+  <nav class="tb-actions">
+    <button class="btn" id="btnImport"><svg><use href="#i-import"/></svg><span class="lbl">Import</span></button>
+    <button class="btn" id="btnAddPage" disabled=""><svg><use href="#i-addpage"/></svg><span class="lbl">Add Page</span></button>
+    <button class="btn" id="btnEdit" disabled=""><svg><use href="#i-edit"/></svg><span class="lbl">Edit</span></button>
+    <button class="btn ghost" id="btnClear" disabled=""><svg><use href="#i-trash"/></svg><span class="lbl">Clear</span></button>
+    <button class="ib" id="btnUndo" title="Undo (Ctrl+Z)" disabled=""><svg><use href="#i-undo"/></svg></button>
+    <button class="ib" id="btnRedo" title="Redo (Ctrl+Y)" disabled=""><svg><use href="#i-redo"/></svg></button>
+    <button class="btn" id="btnPreview" disabled=""><svg><use href="#i-eye"/></svg><span class="lbl">Preview</span></button>
+    <button class="ib" id="btnTheme" title="Toggle light / dark"><svg><use href="#i-moon"/></svg></button>
+    <button class="btn primary" id="btnSave" disabled=""><svg><use href="#i-save"/></svg><span class="lbl">Save PDF</span></button>
+  </nav>
 </header>
 
-<!-- ================= EMPTY STATE ================= -->
-<section id="emptyState">
-  <div>
-    <div class="eyebrow">Merge · Convert · Edit · Export</div>
-    <h1>Drop your PDFs &amp; images <em>on the desk.</em></h1>
-    <p class="lede">Rkrid turns PDFs, photos and scans into one clean, ordered document. Reorder pages, crop, enhance, add text, erase what you don't want — then export as PDF or ZIP.</p>
-    <div class="cta-row">
-      <button class="btn btn-primary" id="btnImportMain"></button>
-      <button class="btn btn-sec" id="btnSample"></button>
-    </div>
-    <div class="fmt-row" aria-label="Supported formats">
-      <span class="fmt">PDF</span><span class="fmt">JPG</span><span class="fmt">PNG</span><span class="fmt">WEBP</span>
-      <span class="fmt">GIF</span><span class="fmt">BMP</span><span class="fmt">TIFF</span><span class="fmt">SVG</span><span class="fmt">HEIC*</span>
-    </div>
-    <p class="privacy-line" id="privacyLine"></p>
-    <div class="flow-steps">
-      <span class="fstep"><b>1</b>Import</span><span class="fstep"><b>2</b>Organize</span>
-      <span class="fstep"><b>3</b>Edit</span><span class="fstep"><b>4</b>Export</span>
-    </div>
-  </div>
-  <div class="tray-zone">
-    <div class="tray-drop" id="trayDrop" role="button" tabindex="0" aria-label="Import files: click or drop files here">
-      <div class="paper-stack" aria-hidden="true">
-        <div class="sheet s1"></div><div class="sheet s2"></div>
-        <div class="sheet s3">
-          <span class="stamp">A4 · READY</span>
-          <div class="sk t"></div><div class="sk a"></div><div class="sk w90"></div><div class="sk w80"></div>
-          <div class="sk w90"></div><div class="sk w60"></div><div class="sk w80"></div>
-        </div>
+<!-- ================= HERO ================= -->
+<section id="heroView">
+  <div class="hero-grid">
+    <div>
+      <div class="kicker">In-browser document studio</div>
+      <h1>Feed it pages.<br />Export one <em>perfect PDF.</em></h1>
+      <p class="lead">Import PDFs and images, rearrange and replace pages, crop, color-grade, filter and annotate — then bind everything into a single PDF. Every byte stays on your device.</p>
+      <div class="import-cta">
+        <button class="btn primary big" id="heroImport"><svg><use href="#i-import"/></svg> Import Files</button>
+        <span class="drop-hint">or drop PDF / image files anywhere on this page</span>
       </div>
-      <span class="tray-hint">Click or drop files here</span>
+      <div class="fmt-row">
+        <span class="chip">PDF</span><span class="chip">JPG</span><span class="chip">PNG</span><span class="chip">WEBP</span>
+        <span class="chip">GIF</span><span class="chip">BMP</span><span class="chip">SVG</span><span class="chip">TIFF*</span>
+      </div>
+      <div class="steps">
+        <div><b>01 · IMPORT</b><span>Mix multiple PDFs &amp; photos</span></div>
+        <div><b>02 · EDIT</b><span>Reorder, crop, filter, add text</span></div>
+        <div><b>03 · SAVE</b><span>Bind to PDF in chosen quality</span></div>
+      </div>
     </div>
-    <span class="float-stamp f1">PDF → IMG</span><span class="float-stamp f2">MERGE</span>
-    <span class="float-stamp f3">CROP + ENHANCE</span><span class="float-stamp f4">IMG → PDF</span>
+    <div class="tray" aria-hidden="true">
+      <div class="sheet s1"><div class="l tiny"></div><div class="l"></div><div class="l mid"></div><div class="l short"></div><div class="tag">SCAN_001 · A4</div></div>
+      <div class="sheet s2"><div class="l tiny"></div><div class="l mid"></div><div class="l"></div><div class="l short"></div><div class="tag">PHOTO_02 · JPG</div></div>
+      <div class="sheet s3"><div class="l tiny"></div><div class="l short"></div><div class="l mid"></div><div class="l"></div><div class="tag">FINAL.PDF · ✓</div></div>
+      <div class="stamp">100%<br />LOCAL<br />PROCESSING</div>
+    </div>
   </div>
 </section>
 
 <!-- ================= WORKSPACE ================= -->
-<main id="workspace" hidden="">
-  <div class="ws-head">
-    <h2>Your document</h2>
-    <span id="docMeta" class="mono"></span>
-    <span class="spacer"></span>
-    <label class="selall"><span class="pcheck"><input type="checkbox" id="selAll" /><span class="box"></span></span>Select all</label>
+<section id="workspaceView" hidden="">
+  <div class="statsbar">
+    <span class="chip" id="chipPages">0 pages</span>
+    <span class="chip" id="chipFiles">0 files</span>
+    <span class="chip" id="chipSize">0 B</span>
   </div>
-  <p class="ws-tip"><span class="desk-only">Drag cards (or the ⠿ handle) to reorder · drop a file onto a page to replace it · </span>Long-press a card on touch to drag.</p>
-  <div id="pageArea" class="grid" role="list" aria-label="Document pages"></div>
-</main>
-
-<!-- ================= BULK BAR ================= -->
-<div id="bulkBar" hidden="">
-  <span class="bb-count" id="bulkCount">0 selected</span>
-  <button class="bb-btn" id="bulkExport"></button>
-  <button class="bb-btn" id="bulkLeft" aria-label="Move selected left"></button>
-  <button class="bb-btn" id="bulkRight" aria-label="Move selected right"></button>
-  <button class="bb-btn danger" id="bulkRemove"></button>
-  <button class="bb-btn" id="bulkClear" aria-label="Clear selection"></button>
-</div>
-
-<!-- ================= MOBILE BAR ================= -->
-<nav id="mobilebar" aria-label="Main actions"><div class="mb-grid" style="grid-template-columns:repeat(6,1fr)">
-  <button class="mb-btn" id="mbPages"></button>
-  <button class="mb-btn" id="mbAdd"></button>
-  <button class="mb-btn" id="mbTools"></button>
-  <button class="mb-btn" id="mbAdjust"></button>
-  <button class="mb-btn" id="mbText"></button>
-  <button class="mb-btn" id="mbExport"></button>
-</div></nav>
-
-<!-- ================= EDITOR ================= -->
-<section id="editor" hidden="" aria-label="Page editor">
-  <div class="ed-top">
-    <button class="icon-btn" id="edBack" aria-label="Back to all pages"></button>
-    <div class="ed-title"><b id="edTitle">Page</b><span id="edSub"></span></div>
-    <div class="ed-nav">
-      <button class="icon-btn" id="edPrev" aria-label="Previous page"></button>
-      <button class="icon-btn" id="edNext" aria-label="Next page"></button>
-    </div>
-    <button class="icon-btn" id="edUndo" aria-label="Undo"></button>
-    <button class="icon-btn" id="edRedo" aria-label="Redo"></button>
-    <button class="btn btn-primary btn-sm" id="edDone"></button>
-  </div>
-  <div class="ed-chips" id="edChips"></div>
-  <div class="ed-body">
-    <div class="ed-rail" id="edRail" aria-label="Pages"></div>
-    <div class="ed-stage" id="edStage">
-      <div id="canvasWrap">
-        <canvas id="mainCanvas"></canvas>
-        <div id="layer" data-tool="">
-          <canvas id="eraseCanvas"></canvas>
-        </div>
-      </div>
-    </div>
-    <aside class="ed-panel" id="edPanel">
-      <div class="p-sec" id="secOrder">
-        <h4>Page order</h4>
-        <div class="order-row">
-          <button class="btn btn-sec btn-sm" id="ordLeft"></button>
-          <span class="pos" id="ordPos">1 / 1</span>
-          <button class="btn btn-sec btn-sm" id="ordRight"></button>
-        </div>
-      </div>
-      <div class="p-sec" id="secTools">
-        <h4>Tools</h4>
-        <div class="tool-grid">
-          <button class="tool-btn" id="toolCrop" data-tool="crop"></button>
-          <button class="tool-btn" id="toolText" data-tool="text"></button>
-          <button class="tool-btn" id="toolErase" data-tool="erase"></button>
-          <button class="tool-btn" id="toolPgNum" data-tool="pgnum"></button>
-        </div>
-        <div class="order-row" style="margin-top:10px">
-          <button class="btn btn-sec btn-sm" id="btnEdReplace" style="flex:1"></button>
-        </div>
-        <div class="order-row" style="margin-top:7px">
-          <button class="btn btn-sec btn-sm" id="btnEdDup" style="flex:1"></button>
-          <button class="btn btn-sec btn-sm danger" id="btnEdRemove" style="flex:1;color:var(--danger)"></button>
-        </div>
-      </div>
-      <div class="p-sec" id="secAdjust"></div>
-      <div class="p-sec" id="secCrop" hidden="">
-        <h4>Crop</h4>
-        <div class="presets" id="cropPresets"></div>
-        <div class="order-row" style="margin-bottom:8px">
-          <button class="btn btn-sec btn-sm" id="cropRotL" style="flex:1" title="Rotate left" aria-label="Rotate left"></button>
-          <button class="btn btn-sec btn-sm" id="cropRotR" style="flex:1" title="Rotate right" aria-label="Rotate right"></button>
-        </div>
-        <div class="order-row">
-          <button class="btn btn-primary btn-sm" id="cropApply" style="flex:1"></button>
-          <button class="btn btn-sec btn-sm" id="cropCancel">Cancel</button>
-          <button class="btn btn-ghost btn-sm" id="cropReset">Reset</button>
-        </div>
-      </div>
-      <div class="p-sec" id="secText" hidden="">
-        <h4>Text</h4>
-        <div id="textContent"></div>
-      </div>
-      <div class="p-sec" id="secPgNum" hidden="">
-        <h4>Page Numbers</h4>
-        <div class="ctl-row">
-          <label>Mode</label>
-          <select id="pnMode" style="flex:1" class="inp">
-            <option value="auto">Automatic</option>
-            <option value="manual">Manual</option>
-          </select>
-        </div>
-        <div class="ctl-row" id="pnFormatRow" hidden="">
-          <label>Format</label>
-          <select id="pnFormat" style="flex:1" class="inp">
-            <option value="Page {n}">Page 1</option>
-            <option value="Page {n} of {t}">Page 1 of 5</option>
-            <option value="- {n} -">- 1 -</option>
-            <option value="{n}">1</option>
-            <option value="{f} - {n}">Filename - 1</option>
-          </select>
-        </div>
-        <div class="ctl-row">
-          <label>Align</label>
-          <div class="seg-mini">
-            <button id="pnAl" aria-label="Align left"></button>
-            <button id="pnAc" aria-label="Align center" class="on"></button>
-            <button id="pnAr" aria-label="Align right"></button>
-          </div>
-        </div>
-        <div class="ctl-row">
-          <label>Position</label>
-          <select id="pnPos" style="flex:1" class="inp">
-            <option value="bottom">Bottom</option>
-            <option value="top">Top</option>
-          </select>
-        </div>
-        <div class="ctl-row">
-          <label>Margin</label>
-          <input type="range" id="pnMargin" min="1" max="25" value="5" style="flex:1" />
-          <span class="adj-val" id="pnMarginVal" style="width:28px">5%</span>
-        </div>
-        <div class="ctl-row">
-          <label>Nudge</label>
-          <div class="seg-mini">
-            <button id="pnMvU" aria-label="Up"></button>
-            <button id="pnMvD" aria-label="Down"></button>
-            <button id="pnMvL" aria-label="Left"></button>
-            <button id="pnMvR" aria-label="Right"></button>
-          </div>
-        </div>
-        <div class="ctl-row">
-          <label>Color</label>
-          <input type="color" id="pnColor" value="#171b26" style="width:30px;height:30px;padding:0;border:none;cursor:pointer" />
-        </div>
-        <div class="ctl-row">
-          <label>Shadow</label>
-          <div style="display:flex;align-items:center;gap:8px">
-            <input type="color" id="pnShadow" value="#ffffff" style="width:30px;height:30px;padding:0;border:none;cursor:pointer" />
-            <button class="btn btn-ghost btn-sm" id="pnShadowClear" style="padding:0 6px">Clear</button>
-          </div>
-        </div>
-        <div class="order-row" style="margin-top:10px">
-          <button class="btn btn-primary btn-sm" id="pnApplyAll" style="flex:1">Apply All</button>
-          <button class="btn btn-sec btn-sm" id="pnApplySel" style="flex:1">Selected</button>
-        </div>
-        <p class="panel-hint" style="margin-top:10px;font-size:12px;color:var(--ink3);line-height:1.4">Added as text boxes. You can edit them later using the Text tool.</p>
-      </div>
-      <div class="p-sec" id="secErase" hidden="">
-        <h4>Erase</h4>
-        <div id="eraseContent"></div>
-      </div>
-    </aside>
-  </div>
+  <div id="grid"></div>
+  <div id="wsFoot">All processing happens in this browser — your files never leave this device</div>
 </section>
 
-<!-- ================= EXPORT MODAL ================= -->
-<div class="overlay" id="exportModal" hidden=""><div class="modal" role="dialog" aria-modal="true" aria-label="Export">
-  <div class="modal-h"><h3 id="expTitle">Save / Export</h3><button class="icon-btn" data-close="" aria-label="Close"></button></div>
-  <div class="modal-b" id="expBody"></div>
+<!-- ================= EDITOR ================= -->
+<section id="editorView" hidden="">
+  <header id="edTop">
+    <button class="btn ghost" id="edBack"><svg><use href="#i-left"/></svg> Document</button>
+    <div class="ed-title"><strong id="edPageName">Page 01</strong><span id="edPageMeta" class="mono"></span></div>
+    <div class="ed-zoom">
+      <button class="ib sm" id="zoomOut" title="Zoom out"><svg><use href="#i-zoomout"/></svg></button>
+      <span class="mono" id="zoomLbl">100%</span>
+      <button class="ib sm" id="zoomIn" title="Zoom in"><svg><use href="#i-zoomin"/></svg></button>
+      <button class="ib sm" id="zoomFit" title="Fit / reset"><svg><use href="#i-fit"/></svg></button>
+    </div>
+  </header>
+  <div id="edBody">
+    <aside id="edStrip" aria-label="Pages"></aside>
+    <div id="stageWrap">
+      <div id="stage">
+        <div id="pageBox">
+          <canvas id="editCanvas"></canvas>
+          <div id="textsLayer"></div>
+          <div id="cropLayer" hidden="">
+            <div id="cropBox">
+              <span class="ch nw" data-h="nw"></span><span class="ch n" data-h="n"></span><span class="ch ne" data-h="ne"></span>
+              <span class="ch e" data-h="e"></span><span class="ch se" data-h="se"></span><span class="ch s" data-h="s"></span>
+              <span class="ch sw" data-h="sw"></span><span class="ch w" data-h="w"></span>
+            </div>
+          </div>
+          <div id="eraseLayer" hidden="" style="position:absolute;inset:0;z-index:15;touch-action:none;cursor:crosshair;"></div>
+        </div>
+      </div>
+      <div id="stageLoad" hidden=""><div class="thumb-load"></div></div>
+    </div>
+    <aside id="edPanel">
+      <section data-panel="adjust">
+        <h3><svg><use href="#i-sliders"/></svg> Image Adjustments</h3>
+        <p class="p-hint">Live preview — applies to this page only. Hold “Before” to compare with the original.</p>
+        <div id="adjRows"></div>
+        <div class="btn-row">
+          <button class="btn" id="adjReset"><svg><use href="#i-undo"/></svg> Reset</button>
+          <button class="btn teal" id="adjCompare">Hold · Before</button>
+          <button class="btn primary" id="adjApply"><svg><use href="#i-check"/></svg> Apply</button>
+        </div>
+      </section>
+      <section data-panel="crop">
+        <h3><svg><use href="#i-crop"/></svg> Crop</h3>
+        <p class="p-hint">Drag the frame or its handles directly on the page, pick a ratio lock, then press Apply Crop.</p>
+        <div class="ratio-chips" id="ratioChips">
+          <span class="chip on" data-ratio="free">Free</span>
+          <span class="chip" data-ratio="orig">Original</span>
+          <span class="chip" data-ratio="a4">A4</span>
+          <span class="chip" data-ratio="sq">Square</span>
+          <span class="chip" data-ratio="custom">Custom</span>
+        </div>
+        <div class="custom-ratio" id="customRatio" hidden="">
+          <input type="number" id="crW" value="3" min="1" max="99" /> : <input type="number" id="crH" value="2" min="1" max="99" />
+          <button class="btn" id="crSet" style="min-height:40px">Set</button>
+        </div>
+        <div class="btn-row">
+          <button class="btn primary" id="cropApply"><svg><use href="#i-check"/></svg> Apply Crop</button>
+          <button class="btn" id="cropReset">Reset Crop</button>
+        </div>
+      </section>
+      <section data-panel="erase">
+        <h3><svg><use href="#i-eraser"/></svg> Erase &amp; Cover</h3>
+        <p class="p-hint">Drag over page to erase. Use "Pick from PDF" to copy background color seamlessly.</p>
+        <div class="tp-row" style="margin-bottom:12px">
+          <span>Color</span>
+          <input type="color" id="eraseColor" value="#ffffff" title="Erase color" />
+          <button class="btn" id="erasePickColor" style="min-height:36px;font-size:0.8rem;padding:0 10px;gap:5px"><svg><use href="#i-pipette"/></svg> Pick from PDF</button>
+        </div>
+        <div class="adj-row">
+          <div class="adj-lab"><span>Eraser Size</span><b class="mono" id="vEraseSize">30px</b></div>
+          <input type="range" id="eraseSize" min="5" max="150" value="30" step="1" />
+        </div>
+        <div class="btn-row" style="margin-top:14px">
+          <button class="btn" id="eraseUndo"><svg><use href="#i-undo"/></svg> Undo Stroke</button>
+          <button class="btn danger" id="eraseClear"><svg><use href="#i-trash"/></svg> Clear All</button>
+        </div>
+        <div class="btn-row" style="margin-top:10px">
+          <button class="btn primary" id="eraseApply"><svg><use href="#i-check"/></svg> Apply Erase</button>
+        </div>
+      </section>
+      <section data-panel="filters">
+        <h3><svg><use href="#i-spark"/></svg> Template Filters</h3>
+        <p class="p-hint">Tap a preset to apply instantly. Combines with the Adjust sliders.</p>
+        <div class="filter-grid" id="filterGrid"></div>
+      </section>
+      <section data-panel="text">
+        <h3><svg><use href="#i-type"/></svg> Text</h3>
+        <p class="p-hint">Add text, drag it anywhere, pull the corner dot to resize. Double-tap a text to type.</p>
+        <button class="btn primary" id="addTextBtn" style="width:100%;margin-bottom:12px"><svg><use href="#i-plus"/></svg> Add Text</button>
+        <div id="textList"></div>
+        <div id="textProps" hidden="">
+          <div class="field"><label>Font family</label><select id="tFont"></select></div>
+          <div class="adj-row"><div class="adj-lab"><span>Font size</span><b class="mono" id="vTSize">–</b></div>
+            <input type="range" id="tSize" min="0.012" max="0.2" step="0.002" /></div>
+          <div class="tp-row"><span>Style</span>
+            <button class="ib sm" id="tBold" style="font-weight:800">B</button>
+            <button class="ib sm" id="tItalic" style="font-style:italic;font-weight:700">I</button>
+            <button class="ib sm" id="tUnder" style="text-decoration:underline;font-weight:700">U</button>
+            <button class="ib sm" id="tShadow" style="text-shadow:0 2px 3px rgba(0,0,0,.7)">S</button></div>
+          <div class="tp-row"><span>Color</span><input type="color" id="tColor" value="#111111" />
+            <span style="width:auto">Bg</span><input type="color" id="tBg" value="#ffffff" />
+            <button class="btn" id="tBgNone" style="min-height:40px">None</button></div>
+          <div class="tp-row"><span>Align</span>
+            <button class="ib sm" data-talign="left" style="font-weight:800">⇤</button>
+            <button class="ib sm" data-talign="center" style="font-weight:800">≡</button>
+            <button class="ib sm" data-talign="right" style="font-weight:800">⇥</button></div>
+          <div class="adj-row"><div class="adj-lab"><span>Opacity</span><b class="mono" id="vTOp">100%</b></div>
+            <input type="range" id="tOpacity" min="0.05" max="1" step="0.01" /></div>
+          <div class="adj-row"><div class="adj-lab"><span>Rotation</span><b class="mono" id="vTRot">0°</b></div>
+            <input type="range" id="tRot" min="-180" max="180" step="1" /></div>
+          <button class="btn danger" id="tDelete" style="width:100%;margin-top:6px"><svg><use href="#i-trash"/></svg> Delete text</button>
+        </div>
+      </section>
+      <section data-panel="arrange">
+        <h3><svg><use href="#i-arrange"/></svg> Arrange Page</h3>
+        <p class="p-hint">Quick operations for the page you are editing.</p>
+        <div class="btn-row"><button class="btn" id="arRotL"><svg><use href="#i-rotccw"/></svg> Rotate ⟲</button>
+          <button class="btn" id="arRotR"><svg><use href="#i-rotcw"/></svg> Rotate ⟳</button></div>
+        <div class="btn-row"><button class="btn" id="arDup"><svg><use href="#i-copy"/></svg> Duplicate</button>
+          <button class="btn" id="arReplace"><svg><use href="#i-swap"/></svg> Replace</button></div>
+        <div class="btn-row"><button class="btn danger" id="arDelete"><svg><use href="#i-trash"/></svg> Delete page</button></div>
+      </section>
+    </aside>
+  </div>
+  <footer id="edTools">
+    <button class="tool-btn on" data-tool="adjust"><svg><use href="#i-sliders"/></svg> Adjust</button>
+    <button class="tool-btn" data-tool="crop"><svg><use href="#i-crop"/></svg> Crop</button>
+    <button class="tool-btn" data-tool="erase"><svg><use href="#i-eraser"/></svg> Erase</button>
+    <button class="tool-btn" data-tool="filters"><svg><use href="#i-spark"/></svg> Filters</button>
+    <button class="tool-btn" data-tool="text"><svg><use href="#i-type"/></svg> Text</button>
+    <button class="tool-btn" data-tool="arrange"><svg><use href="#i-arrange"/></svg> Page</button>
+    <span id="edPageInfo" class="mono"></span>
+  </footer>
+</section>
+
+<!-- ================= PREVIEW ================= -->
+<section id="previewView" hidden="">
+  <header id="pvTop">
+    <button class="ib" id="pvClose" style="background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.2);color:#fff"><svg><use href="#i-x"/></svg></button>
+    <span class="mono" id="pvCount">PAGE 1 / 1</span>
+    <span class="mono" id="pvName" style="margin-left:auto;opacity:.7;font-size:.66rem"></span>
+  </header>
+  <div id="pvStage"><canvas id="pvCanvas"></canvas></div>
+  <footer id="pvNav">
+    <button class="ib" id="pvPrev"><svg><use href="#i-left"/></svg></button>
+    <button class="ib" id="pvNext"><svg><use href="#i-right"/></svg></button>
+  </footer>
+</section>
+
+<!-- ================= MODALS ================= -->
+<div class="modal-bd" id="addPageModal" hidden=""><div class="modal">
+  <h3>Add Page</h3><p class="sub">Choose what to insert and where it should go.</p>
+  <div class="seg" id="apType">
+    <button class="on" data-ap="blank">Blank</button><button data-ap="image">Image</button><button data-ap="pdf">PDF</button>
+  </div>
+  <div id="apBlankOpts">
+    <div class="field"><label>Page size</label>
+      <select id="apSize"><option value="a4">A4 · 210 × 297 mm</option><option value="a5">A5 · 148 × 210 mm</option>
+      <option value="letter">Letter · 8.5 × 11 in</option><option value="legal">Legal · 8.5 × 14 in</option>
+      <option value="custom">Custom…</option></select></div>
+    <div class="custom-ratio" id="apCustom" hidden="">
+      <input type="number" id="apW" value="210" min="20" max="2000" /> mm × <input type="number" id="apH" value="297" min="20" max="2000" /> mm
+    </div>
+  </div>
+  <div class="field"><label>Position</label>
+    <select id="apPos"><option value="end">Add at end</option><option value="after">After selected page</option><option value="before">Before selected page</option></select></div>
+  <div class="m-actions"><button class="btn ghost" data-close="">Cancel</button><button class="btn primary" id="apConfirm"><svg><use href="#i-plus"/></svg> Add</button></div>
 </div></div>
 
-<!-- ================= REPLACE PICKER ================= -->
-<div class="overlay" id="pickerModal" hidden=""><div class="modal" role="dialog" aria-modal="true" aria-label="Choose pages">
-  <div class="modal-h"><h3>Replace with…</h3><button class="icon-btn" data-close="" aria-label="Close"></button></div>
-  <div class="modal-b">
-    <p style="font-size:13.5px;color:var(--ink2);margin-bottom:12px">This PDF has several pages. Pick which one(s) should take the page's place.</p>
-    <div id="pickerGrid"></div>
-  </div>
-  <div class="modal-f">
-    <label class="selall" style="margin-right:auto"><span class="pcheck"><input type="checkbox" id="pickAll" checked="" /><span class="box"></span></span>All pages</label>
-    <button class="btn btn-ghost" data-close="">Cancel</button>
-    <button class="btn btn-primary" id="pickConfirm"></button>
-  </div>
+<div class="modal-bd" id="saveModal" hidden=""><div class="modal">
+  <h3>Save as PDF</h3><p class="sub">All edits — crop, adjustments, filters, rotation and text — are baked in.</p>
+  <div class="field"><label>Filename</label><input type="text" id="saveName" value="My_Document.pdf" /></div>
+  <div class="field" style="margin-bottom:6px"><label>Export quality</label></div>
+  <label class="qopt" data-q="small"><input type="radio" name="quality" value="small" /><div><b>Small Size</b><span>100 DPI · JPEG 60%</span></div></label>
+  <label class="qopt sel" data-q="standard"><input type="radio" name="quality" value="standard" checked="" /><div><b>Standard</b><span>150 DPI · JPEG 75% · recommended</span></div></label>
+  <label class="qopt" data-q="high"><input type="radio" name="quality" value="high" /><div><b>High Quality</b><span>220 DPI · JPEG 86%</span></div></label>
+  <label class="qopt" data-q="max"><input type="radio" name="quality" value="max" /><div><b>Maximum Quality</b><span>300 DPI · JPEG 93%</span></div></label>
+  <div id="estLine">Estimated size: —</div>
+  <div class="m-actions"><button class="btn ghost" data-close="">Cancel</button><button class="btn primary big" id="saveConfirm"><svg><use href="#i-save"/></svg> Save PDF</button></div>
 </div></div>
 
-<!-- hosts -->
-<div id="sheetHost" hidden=""></div>
-<div id="toasts" aria-live="polite"></div>
-<div id="loader" hidden=""><div class="loader-card"><div class="spinner"></div><h4 id="loaderLabel">Working…</h4><div class="bar striped"><i id="loaderBar"></i></div></div></div>
-<div id="dropVeil" hidden=""><div class="inner">Drop files to import ↓</div></div>
+<div class="modal-bd" id="confirmBd" hidden=""><div class="modal" style="width:min(400px,100%)">
+  <h3 id="cfTitle">Are you sure?</h3><p class="sub" id="cfMsg"></p>
+  <div class="m-actions"><button class="btn ghost" id="cfNo">Cancel</button><button class="btn danger" id="cfYes">Delete</button></div>
+</div></div>
 
-<input type="file" id="fileImport" multiple="" hidden="" accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,.bmp,.tif,.tiff,.svg,.heic,.heif,application/pdf,image/*" />
-<input type="file" id="fileReplace" multiple="" hidden="" accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,.bmp,.tif,.tiff,.svg,.heic,.heif,application/pdf,image/*" />
-<input type="file" id="fileCamera" hidden="" accept="image/*" capture="environment" />
+<div id="progOverlay" hidden=""><div class="prog-card">
+  <div class="prog-title" id="progTitle">Processing…</div>
+  <div class="prog-bar"><div id="progFill"></div></div>
+  <div class="prog-detail mono" id="progDetail">—</div>
+  <button class="btn" id="progCancel" style="margin-top:14px" hidden="">Cancel</button>
+</div></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<div id="toasts" role="status" aria-live="polite"></div>
+
+<input type="file" id="importInput" multiple="" hidden="" accept=".pdf,application/pdf,image/*,.svg,.bmp,.tif,.tiff" />
+<input type="file" id="replaceInput" hidden="" accept=".pdf,application/pdf,image/*" />
+<input type="file" id="apImageInput" hidden="" multiple="" accept="image/*" />
+<input type="file" id="apPdfInput" hidden="" multiple="" accept=".pdf,application/pdf" />
+
+
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+<script>if(!window.pdfjsLib)document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"><\/script>');</script>
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script>if(!window.PDFLib)document.write('<script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"><\/script>');</script>
 <script src="script.js"></script></body></html>
