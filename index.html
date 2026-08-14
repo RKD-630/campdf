@@ -150,9 +150,7 @@
       <div id="stageLoad" hidden=""><div class="thumb-load"></div></div>
     </div>
     <aside id="edPanel">
-      <section data-panel="adjust">
-        <h6><svg><use href="#i-sliders"/></svg> Adjust</h6>
-        <p class="p-hint">Live preview</p>
+      <section data-panel="adjust" class="on">
         <div id="adjRows"></div>
         <div class="btn-row">
           <button class="btn" id="adjReset"><svg><use href="#i-undo"/></svg> Reset</button>
@@ -162,7 +160,6 @@
       </section>
       <section data-panel="crop">
         <h3><svg><use href="#i-crop"/></svg> Crop</h3>
-        <p class="p-hint">Drag the frame or its handles directly on the page, pick a ratio lock, then press Apply Crop.</p>
         <div class="ratio-chips" id="ratioChips">
           <span class="chip on" data-ratio="free">Free</span>
           <span class="chip" data-ratio="orig">Original</span>
@@ -181,7 +178,6 @@
       </section>
       <section data-panel="erase">
         <h3><svg><use href="#i-eraser"/></svg> Erase &amp; Cover</h3>
-        <p class="p-hint">Drag over page to erase. Use "Pick from PDF" to copy background color seamlessly.</p>
         <div class="tp-row" style="margin-bottom:12px">
           <span>Color</span>
           <input type="color" id="eraseColor" value="#ffffff" title="Erase color" />
@@ -201,12 +197,10 @@
       </section>
       <section data-panel="filters">
         <h3><svg><use href="#i-spark"/></svg> Template Filters</h3>
-        <p class="p-hint">Tap a preset to apply instantly. Combines with the Adjust sliders.</p>
         <div class="filter-grid" id="filterGrid"></div>
       </section>
       <section data-panel="text">
         <h3><svg><use href="#i-type"/></svg> Text</h3>
-        <p class="p-hint">Add text, drag it anywhere, pull the corner dot to resize. Double-tap a text to type.</p>
         <button class="btn primary" id="addTextBtn" style="width:100%;margin-bottom:12px"><svg><use href="#i-plus"/></svg> Add Text</button>
         <div id="textList"></div>
         <div id="textProps" hidden="">
@@ -234,7 +228,6 @@
       </section>
       <section data-panel="arrange">
         <h3><svg><use href="#i-arrange"/></svg> Arrange Page</h3>
-        <p class="p-hint">Quick operations for the page you are editing.</p>
         <div class="btn-row"><button class="btn" id="arRotL"><svg><use href="#i-rotccw"/></svg> Rotate ⟲</button>
           <button class="btn" id="arRotR"><svg><use href="#i-rotcw"/></svg> Rotate ⟳</button></div>
         <div class="btn-row"><button class="btn" id="arDup"><svg><use href="#i-copy"/></svg> Duplicate</button>

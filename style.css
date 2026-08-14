@@ -226,7 +226,7 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 @keyframes panelIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 #edPanel h3{font-family:var(--font-disp);font-weight:800;font-size:1.02rem;margin-bottom:4px;display:flex;align-items:center;gap:8px}
 #edPanel h3 svg{width:17px;height:17px;color:var(--accent)}
-.p-hint{font-size:.75rem;color:var(--muted);line-height:1.5;margin-bottom:14px}
+.p-hint{display:none!important}
 .adj-row{margin-bottom:8px}
 .adj-lab{display:flex;justify-content:space-between;font-size:.79rem;font-weight:600;margin-bottom:1px}
 .adj-lab b{font-family:var(--font-mono);font-weight:500;color:var(--accent);font-size:.72rem}
