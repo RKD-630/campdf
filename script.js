@@ -311,58 +311,105 @@ async function importImageFile(file,insertAt){
   if(insertAt==null||insertAt < 0)state.pages.push(pg); else state.pages.splice(insertAt,0,pg);
   return pg;
 }
-async function importPdfFile(file,insertAt){
-  const bytes=new Uint8Array(await file.arrayBuffer());
-  const task=pdfjsLib.getDocument({data:bytes.slice()});
-  task.onProgress=pr=>{ if(pr.total) setProgress(pr.loaded/pr.total,"Reading "+file.name+" · "+fmtBytes(pr.loaded)+" / "+fmtBytes(pr.total)); };
-  const doc=await task.promise;
-  if(doc.numPages>250){
-    const ok=await confirmDialog({title:"Large PDF",msg:'"'+file.name+'" has '+doc.numPages+' pages. Importing may take a while and use a lot of memory. Continue?',okLabel:"Import anyway",danger:false});
-    if(!ok){try{doc.destroy();}catch(e){} return 0;}
+async function importPdfFile(file, insertAt, isQuickMode = false) {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const task = pdfjsLib.getDocument({ data: bytes.slice() });
+  task.onProgress = pr => { if (pr.total) setProgress(pr.loaded / pr.total, "Reading " + file.name + " · " + fmtBytes(pr.loaded) + " / " + fmtBytes(pr.total)); };
+  const doc = await task.promise;
+  const isHeavy = doc.numPages > 50 || file.size > 15 * 1024 * 1024;
+  const useQuick = isQuickMode || isHeavy;
+
+  const fileId = state.nextId++;
+  state.files.set(fileId, { kind: "pdf", name: file.name, size: file.size, doc: doc, numPages: doc.numPages });
+  const made = [];
+
+  if (useQuick) {
+    setProgress(0.4, `⚡ Quick Importing ${file.name} (${doc.numPages} pages)…`);
+    await frame();
+    let defW = 595, defH = 842;
+    try {
+      const p1 = await doc.getPage(1);
+      const vp1 = p1.getViewport({ scale: 1 });
+      defW = vp1.width; defH = vp1.height;
+      try { p1.cleanup(); } catch (e) {}
+    } catch (e) {}
+
+    for (let i = 1; i <= doc.numPages; i++) {
+      made.push(newPage({
+        kind: "pdf",
+        fileId: fileId,
+        pageIndex: i,
+        name: file.name,
+        sizeBytes: file.size,
+        baseW: defW,
+        baseH: defH
+      }));
+    }
+
+    setTimeout(async () => {
+      for (let i = 2; i <= doc.numPages; i++) {
+        try {
+          const p = await doc.getPage(i);
+          const vp = p.getViewport({ scale: 1 });
+          const pgItem = made[i - 1];
+          if (pgItem && (pgItem.baseW !== vp.width || pgItem.baseH !== vp.height)) {
+            pgItem.baseW = vp.width; pgItem.baseH = vp.height;
+          }
+          try { p.cleanup(); } catch (e) {}
+        } catch (e) {}
+        if (i % 60 === 0) await frame();
+      }
+    }, 150);
+  } else {
+    for (let i = 1; i <= doc.numPages; i++) {
+      const p = await doc.getPage(i); const vp = p.getViewport({ scale: 1 });
+      made.push(newPage({ kind: "pdf", fileId: fileId, pageIndex: i, name: file.name, sizeBytes: file.size, baseW: vp.width, baseH: vp.height }));
+      try { p.cleanup(); } catch (e) {}
+      if (i % 25 === 0) { setProgress(i / doc.numPages, "Parsing " + file.name + " · page " + i + "/" + doc.numPages); await frame(); }
+    }
   }
-  const fileId=state.nextId++;
-  state.files.set(fileId,{kind:"pdf",name:file.name,size:file.size,doc:doc,numPages:doc.numPages});
-  const made=[];
-  for(let i=1;i<=doc.numPages;i++){
-    const p=await doc.getPage(i); const vp=p.getViewport({scale:1});
-    made.push(newPage({kind:"pdf",fileId:fileId,pageIndex:i,name:file.name,sizeBytes:file.size,baseW:vp.width,baseH:vp.height}));
-    try{p.cleanup();}catch(e){}
-    if(i%25===0){setProgress(i/doc.numPages,"Parsing "+file.name+" · page "+i+"/"+doc.numPages); await frame();}
-  }
-  if(insertAt==null||insertAt < 0)state.pages.push.apply(state.pages,made);
-  else state.pages.splice.apply(state.pages,[insertAt,0].concat(made));
+
+  if (insertAt == null || insertAt < 0) state.pages.push.apply(state.pages, made);
+  else state.pages.splice.apply(state.pages, [insertAt, 0].concat(made));
   return made.length;
 }
-function loadError(e,name){
-  if(e&&e.name==="PasswordException")toast('"'+name+'" is password-protected and can\'t be opened.',"error");
-  else if(e&&e.name==="InvalidPDFException")toast('"'+name+'" is corrupted or not a valid PDF.',"error");
-  else toast('Could not load "'+name+'" — '+(e.message||"unsupported format")+".","error");
+
+function loadError(e, name) {
+  if (e && e.name === "PasswordException") toast('"' + name + '" is password-protected and can\'t be opened.', "error");
+  else if (e && e.name === "InvalidPDFException") toast('"' + name + '" is corrupted or not a valid PDF.', "error");
+  else toast('Could not load "' + name + '" — ' + (e.message || "unsupported format") + ".", "error");
 }
-async function importFiles(list){
-  const files=[...list]; if(!files.length)return;
-  const total=files.reduce((s,f)=>s+f.size,0);
-  if(total>260*1024*1024){
-    const ok=await confirmDialog({title:"Very large import",msg:"You are importing "+fmtBytes(total)+". Browsers may struggle with this much data. Continue?",okLabel:"Continue",danger:false});
-    if(!ok)return;
+
+async function importFiles(list, opts = {}) {
+  const files = [...list]; if (!files.length) return;
+  const isQuickMode = !!opts.isQuickMode;
+  const total = files.reduce((s, f) => s + f.size, 0);
+  if (total > 350 * 1024 * 1024 && !isQuickMode) {
+    const ok = await confirmDialog({ title: "Very large import", msg: "You are importing " + fmtBytes(total) + ". Continue with Quick Import?", okLabel: "⚡ Quick Import", danger: false });
+    if (!ok) return;
   }
-  showProgress("Importing files…"); pushHistory();
-  let okC=0,failC=0,pageC=0;
-  for(let i=0; i < files.length; i++){
-    const f=files[i];
-    setProgress(i/files.length,"File "+(i+1)+" / "+files.length+" · "+f.name);
+  showProgress(isQuickMode ? "⚡ Quick Importing heavy PDF…" : "Importing files…"); pushHistory();
+  let okC = 0, failC = 0, pageC = 0;
+  for (let i = 0; i < files.length; i++) {
+    const f = files[i];
+    setProgress(i / files.length, (isQuickMode ? "⚡ Quick Processing " : "File ") + (i + 1) + " / " + files.length + " · " + f.name);
     await frame();
-    try{
-      if(isPdfFile(f))pageC+=await importPdfFile(f);
-      else if(isImageFile(f)){await importImageFile(f);pageC++;}
-      else{failC++;toast("Unsupported file type: "+f.name,"error");continue;}
+    try {
+      if (isPdfFile(f)) pageC += await importPdfFile(f, null, isQuickMode);
+      else if (isImageFile(f)) { await importImageFile(f); pageC++; }
+      else { failC++; toast("Unsupported file type: " + f.name, "error"); continue; }
       okC++;
-    }catch(e){failC++;loadError(e,f.name);}
+    } catch (e) { failC++; loadError(e, f.name); }
   }
   hideProgress(); renderGrid(); updateStats(); switchView();
-  if(okC)toast("Imported "+pageC+" page"+(pageC!==1?"s":"")+" from "+okC+" file"+(okC!==1?"s":"")+(failC?" · "+failC+" failed":""),"ok");
+  if (okC) toast((isQuickMode ? "⚡ Quick imported " : "Imported ") + pageC + " page" + (pageC !== 1 ? "s" : "") + " from " + okC + " file" + (okC !== 1 ? "s" : "") + (failC ? " · " + failC + " failed" : ""), "ok");
 }
-$("#importInput").addEventListener("change",e=>{importFiles(e.target.files); e.target.value="";});
-$("#btnImport").onclick=$("#heroImport").onclick=()=>$("#importInput").click();
+
+$("#importInput").addEventListener("change", e => { importFiles(e.target.files); e.target.value = ""; });
+if ($("#quickImportInput")) $("#quickImportInput").addEventListener("change", e => { importFiles(e.target.files, { isQuickMode: true }); e.target.value = ""; });
+$("#btnImport").onclick = $("#heroImport").onclick = () => $("#importInput").click();
+if ($("#btnQuickImport")) $("#btnQuickImport").onclick = () => $("#quickImportInput").click();
+if ($("#heroQuickImport")) $("#heroQuickImport").onclick = () => $("#quickImportInput").click();
 let dragDepth=0;
 addEventListener("dragenter",e=>{if(e.dataTransfer&&[...e.dataTransfer.types].includes("Files")){dragDepth++;document.body.classList.add("dragging-file");}});
 addEventListener("dragleave",()=>{if(--dragDepth<=0){dragDepth=0;document.body.classList.remove("dragging-file");}});
@@ -461,7 +508,9 @@ function updateStats(){
   $("#chipFiles").textContent=state.files.size+" files";
   $("#chipSize").textContent=fmtBytes(bytes);
   const has=state.pages.length>0;
-  ["btnAddPage","btnEdit","btnClear","btnPreview","btnSave"].forEach(id=>{$("#"+id).disabled=!has;});
+  ["btnAddPage","btnEdit","btnClear","btnPreview","btnExportZip"].forEach(id=>{
+    const el=$("#"+id); if(el) el.disabled=!has;
+  });
 }
 function switchView(){
   const has=state.pages.length>0;
@@ -769,37 +818,140 @@ function setTool(tool){
 $$("#edTools .tool-btn").forEach(b=>b.onclick=()=>setTool(b.dataset.tool));
 
 /* ---- adjust ---- */
-const ADJ_DEFS=[
-  ["brightness","Brightness",-100,100],["contrast","Contrast",-100,100],
-  ["darkness","Darkness",0,100],["sharpness","Sharpness",0,100],
-  ["hue","Hue",-180,180],["saturation","Saturation",-100,100],
-  ["exposure","Exposure",-100,100],["opacity","Opacity",0,100]
-];
-$("#adjRows").innerHTML=ADJ_DEFS.map(d=>
-  '<div class="adj-row"><div class="adj-lab"><span>'+d[1]+'</span><b class="mono" id="v-'+d[0]+'">0</b></div>'+
-  '<input type="range" min="'+d[2]+'" max="'+d[3]+'" step="1" data-adj="'+d[0]+'" id="sl-'+d[0]+'"></div>').join("");
-let sharpTimer=null;
-$$("#adjRows input[type=range]").forEach(sl=>{
-  sl.addEventListener("input",()=>{
-    const p=curPage(); if(!p)return;
-    if(!adjDirty){pushHistory();adjDirty=true;}
-    p.edits.adj[sl.dataset.adj]=+sl.value;
-    $("#v-"+sl.dataset.adj).textContent=sl.value+(sl.dataset.adj==="opacity"?"%":"");
+const ADJ_CONFIG = {
+  brightness: { name: 'Brightness', icon: 'i-sun', min: -100, max: 100, def: 0, unit: '' },
+  contrast:   { name: 'Contrast',   icon: 'i-contrast', min: -100, max: 100, def: 0, unit: '' },
+  darkness:   { name: 'Darkness',   icon: 'i-moon', min: 0, max: 100, def: 0, unit: '' },
+  sharpness:  { name: 'Sharpness',  icon: 'i-sharpness', min: 0, max: 100, def: 0, unit: '' },
+  hue:        { name: 'Hue',        icon: 'i-hue', min: -180, max: 180, def: 0, unit: '°' },
+  saturation: { name: 'Saturation', icon: 'i-saturation', min: -100, max: 100, def: 0, unit: '' },
+  exposure:   { name: 'Exposure',   icon: 'i-exposure', min: -100, max: 100, def: 0, unit: '' },
+  opacity:    { name: 'Opacity',    icon: 'i-opacity', min: 0, max: 100, def: 100, unit: '%' }
+};
+let activeAdj = 'brightness';
+
+function valToAngle(key, val) {
+  const cfg = ADJ_CONFIG[key] || ADJ_CONFIG.brightness;
+  const norm = clamp((val - cfg.min) / (cfg.max - cfg.min), 0, 1);
+  return (norm * 270) - 135;
+}
+
+function angleToVal(key, angle) {
+  const cfg = ADJ_CONFIG[key] || ADJ_CONFIG.brightness;
+  const norm = clamp((angle + 135) / 270, 0, 1);
+  return Math.round(cfg.min + norm * (cfg.max - cfg.min));
+}
+
+function generateArcTicks() {
+  const ticks = [];
+  const R1 = 75, R2 = 82, cx = 90, cy = 90;
+  for (let i = 0; i <= 20; i++) {
+    const aDeg = -135 + (i * 270 / 20);
+    const rad = (aDeg - 90) * Math.PI / 180;
+    const x1 = (cx + R1 * Math.cos(rad)).toFixed(1);
+    const y1 = (cy + R1 * Math.sin(rad)).toFixed(1);
+    const x2 = (cx + R2 * Math.cos(rad)).toFixed(1);
+    const y2 = (cy + R2 * Math.sin(rad)).toFixed(1);
+    const isMajor = i % 5 === 0;
+    ticks.push(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="vol-tick ${isMajor ? 'major' : ''}" />`);
+  }
+  return ticks.join('');
+}
+
+function buildAdjustUI() {
+  const keys = Object.keys(ADJ_CONFIG);
+  const container = $("#adjRows");
+  if (!container) return;
+  container.innerHTML =
+    `<div class="adj-options-grid">` +
+      keys.map(k => {
+        const c = ADJ_CONFIG[k];
+        return `<button class="adj-opt-btn" id="adj-opt-${k}" data-mode="${k}">
+          <span class="adj-opt-dot"></span>
+          <svg><use href="#${c.icon}"/></svg>
+          <span class="adj-opt-label">${c.name}</span>
+          <span class="adj-opt-val">0</span>
+        </button>`;
+      }).join('') +
+    `</div>` +
+    `<div class="vol-controller">
+      <div class="vol-slider-header">
+        <span class="vol-slider-title" id="volSliderTitle">BRIGHTNESS</span>
+        <span class="vol-slider-value" id="volSliderValue">0</span>
+      </div>
+      <div class="vol-slider-fallback">
+        <input type="range" id="volRangeFallback" />
+        <div class="vol-slider-range-labels">
+          <span id="volMinLabel">-100</span>
+          <span id="volMaxLabel">+100</span>
+        </div>
+      </div>
+    </div>`;
+
+  $$('#adjRows .adj-opt-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeAdj = btn.dataset.mode;
+      syncSlidersFromPage();
+    });
+  });
+
+  const rangeFB = $('#volRangeFallback');
+  rangeFB.addEventListener('input', () => {
+    const p = curPage(); if (!p) return;
+    const newVal = +rangeFB.value;
+    if (!adjDirty) { pushHistory(); adjDirty = true; }
+    p.edits.adj[activeAdj] = newVal;
+    syncSlidersFromPage();
     liveFx();
-    if(sl.dataset.adj==="sharpness"){
+    if (activeAdj === 'sharpness') {
       clearTimeout(sharpTimer);
-      sharpTimer=setTimeout(()=>{if(editorBase)redrawDisplay();},260);
+      sharpTimer = setTimeout(() => { if (editorBase) redrawDisplay(); }, 260);
     }
   });
-});
-function syncSlidersFromPage(){
-  const p=curPage(); if(!p)return;
-  ADJ_DEFS.forEach(d=>{
-    const v=p.edits.adj[d[0]];
-    $("#sl-"+d[0]).value=v;
-    $("#v-"+d[0]).textContent=v+(d[0]==="opacity"?"%":"");
-  });
 }
+
+let sharpTimer = null;
+
+function syncSlidersFromPage() {
+  const p = curPage(); if (!p) return;
+  const keys = Object.keys(ADJ_CONFIG);
+  keys.forEach(k => {
+    const cfg = ADJ_CONFIG[k];
+    const val = p.edits.adj[k] ?? cfg.def;
+    const btn = $('#adj-opt-' + k);
+    if (btn) {
+      btn.classList.toggle('on', k === activeAdj);
+      btn.classList.toggle('modified', val !== cfg.def);
+      const valEl = btn.querySelector('.adj-opt-val');
+      if (valEl) valEl.textContent = (val > 0 ? '+' : '') + val + cfg.unit;
+    }
+  });
+
+  const curCfg = ADJ_CONFIG[activeAdj];
+  const curVal = p.edits.adj[activeAdj] ?? curCfg.def;
+
+  const titleEl = $('#volSliderTitle');
+  if (titleEl) titleEl.textContent = curCfg.name.toUpperCase();
+
+  const valEl = $('#volSliderValue');
+  if (valEl) valEl.textContent = (curVal > 0 ? '+' : '') + curVal + curCfg.unit;
+
+  const minEl = $('#volMinLabel');
+  if (minEl) minEl.textContent = curCfg.min + curCfg.unit;
+
+  const maxEl = $('#volMaxLabel');
+  if (maxEl) maxEl.textContent = (curCfg.max > 0 ? '+' : '') + curCfg.max + curCfg.unit;
+
+  const rangeFB = $('#volRangeFallback');
+  if (rangeFB) {
+    rangeFB.min = curCfg.min;
+    rangeFB.max = curCfg.max;
+    rangeFB.value = curVal;
+  }
+}
+
+buildAdjustUI();
+
 $("#adjReset").onclick=()=>{
   const p=curPage(); if(!p)return;
   pushHistory(); p.edits.adj=DEFAULT_ADJ(); adjDirty=false;
@@ -1305,28 +1457,63 @@ function estimateSize(qk){
   });
   return bytes;
 }
-function openSaveModal(){
-  if(!state.pages.length)return;
-  const base=(state.pages[0].name||"document").replace(/\.[^.]+$/,"").replace(/[\\/:*?"<>|]/g,"_").slice(0,60)||"My_Document";
-  $("#saveName").value=base+".pdf";
-  $$(".qopt").forEach(o=>{
-    o.classList.toggle("sel",o.dataset.q===curQuality);
-    o.querySelector("input").checked=o.dataset.q===curQuality;
+let curExpMode = "pdf";
+let curZipFmt = "jpg";
+
+function openSaveModal(mode) {
+  if (!state.pages.length) return;
+  curExpMode = mode || "pdf";
+
+  const base = (state.pages[0].name || "document").replace(/\.[^.]+$/, "").replace(/[\\/:*?"<>|]/g, "_").slice(0, 60) || "My_Document";
+  $("#saveName").value = base + ".pdf";
+  if ($("#zipSaveName")) $("#zipSaveName").value = base + "_images.zip";
+
+  $$("#expModeSeg button").forEach(b => b.classList.toggle("on", b.dataset.exp === curExpMode));
+  if ($("#pdfExportOpts")) $("#pdfExportOpts").hidden = curExpMode !== "pdf";
+  if ($("#zipExportOpts")) $("#zipExportOpts").hidden = curExpMode !== "zip";
+
+  $$(".qopt").forEach(o => {
+    o.classList.toggle("sel", o.dataset.q === curQuality);
+    o.querySelector("input").checked = o.dataset.q === curQuality;
   });
-  $("#estLine").textContent="Estimated size: ≈ "+fmtBytes(estimateSize(curQuality));
-  $("#saveModal").hidden=false;
+  $("#estLine").textContent = "Estimated size: ≈ " + fmtBytes(estimateSize(curQuality));
+  $("#saveModal").hidden = false;
 }
-$$(".qopt").forEach(o=>o.onclick=()=>{
-  curQuality=o.dataset.q;
-  $$(".qopt").forEach(x=>{x.classList.toggle("sel",x===o);x.querySelector("input").checked=x===o;});
-  $("#estLine").textContent="Estimated size: ≈ "+fmtBytes(estimateSize(curQuality));
+
+$$("#expModeSeg button").forEach(b => b.onclick = () => {
+  curExpMode = b.dataset.exp;
+  $$("#expModeSeg button").forEach(x => x.classList.toggle("on", x === b));
+  if ($("#pdfExportOpts")) $("#pdfExportOpts").hidden = curExpMode !== "pdf";
+  if ($("#zipExportOpts")) $("#zipExportOpts").hidden = curExpMode !== "zip";
 });
-$("#btnSave").onclick=openSaveModal;
-$("#saveConfirm").onclick=async()=>{
-  let name=$("#saveName").value.trim().replace(/[\\/:*?"<>|]/g,"-")||"My_Document.pdf";
-  if(!/\.pdf$/i.test(name))name+=".pdf";
-  $("#saveModal").hidden=true;
-  await exportPdf(name,curQuality);
+
+$$("#zipFmtSeg button").forEach(b => b.onclick = () => {
+  curZipFmt = b.dataset.fmt;
+  $$("#zipFmtSeg button").forEach(x => x.classList.toggle("on", x === b));
+});
+
+$$(".qopt").forEach(o => o.onclick = () => {
+  curQuality = o.dataset.q;
+  $$(".qopt").forEach(x => { x.classList.toggle("sel", x === o); x.querySelector("input").checked = x === o; });
+  $("#estLine").textContent = "Estimated size: ≈ " + fmtBytes(estimateSize(curQuality));
+});
+
+if ($("#btnSave")) $("#btnSave").onclick = () => openSaveModal("pdf");
+if ($("#btnExportZip")) $("#btnExportZip").onclick = () => openSaveModal("zip");
+
+$("#saveConfirm").onclick = async () => {
+  if (curExpMode === "pdf") {
+    let name = $("#saveName").value.trim().replace(/[\\/:*?"<>|]/g, "-") || "My_Document.pdf";
+    if (!/\.pdf$/i.test(name)) name += ".pdf";
+    $("#saveModal").hidden = true;
+    await exportPdf(name, curQuality);
+  } else {
+    let zipName = $("#zipSaveName").value.trim().replace(/[\\/:*?"<>|]/g, "-") || "My_Images.zip";
+    if (!/\.zip$/i.test(zipName)) zipName += ".zip";
+    const dpi = +$("#zipDpi").value || 150;
+    $("#saveModal").hidden = true;
+    await exportZip(zipName, curZipFmt, dpi);
+  }
 };
 async function exportPdf(name,qKey){
   const Q=QUAL[qKey];
@@ -1385,6 +1572,94 @@ async function exportPdf(name,qKey){
   }catch(err){
     if(err.message==="cancelled")toast("Export cancelled","warn");
     else toast("Export failed: "+(err.message||"unknown error"),"error",6000);
+  }
+  hideProgress();
+}
+
+async function exportZip(zipName, fmt, dpi) {
+  if (!window.JSZip) {
+    toast("JSZip library loading. Please check internet connection.", "error");
+    return;
+  }
+  showProgress("Exporting Images Archive (ZIP)…", true);
+  exportCancelled = false;
+  try {
+    const zip = new JSZip();
+    const total = state.pages.length;
+    const padLen = total > 99 ? 3 : 2;
+
+    let mimeType = "image/jpeg";
+    let ext = ".jpg";
+    let quality = 0.88;
+
+    if (fmt === "png") {
+      mimeType = "image/png";
+      ext = ".png";
+      quality = 1.0;
+    } else if (fmt === "gif") {
+      mimeType = "image/gif";
+      ext = ".gif";
+      quality = 0.9;
+    }
+
+    for (let i = 0; i < total; i++) {
+      if (exportCancelled) throw new Error("cancelled");
+      setProgress(i / total, `Encoding Page ${i + 1} / ${total} (${fmt.toUpperCase()})`);
+      await frame();
+
+      const p = state.pages[i];
+      const dim = pagePhysical(p);
+      const targetW = dim[0] * (dpi / 72);
+      const cv = await renderBase(p, { targetW: targetW });
+
+      const out = document.createElement("canvas");
+      out.width = cv.width;
+      out.height = cv.height;
+      const ctx = out.getContext("2d");
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, out.width, out.height);
+      ctx.filter = cssFilterOf(p);
+      ctx.globalAlpha = opacityOf(p);
+      ctx.drawImage(cv, 0, 0);
+      ctx.filter = "none";
+      ctx.globalAlpha = 1;
+
+      const sh = sharpOf(p);
+      if (sh > 0 && out.width * out.height <= 16000000) applySharpen(out, sh);
+      drawErases(ctx, p, out.width, out.height);
+      drawTexts(ctx, p, out.width, out.height);
+
+      let blob = await new Promise(r => out.toBlob(r, mimeType, quality));
+      if (!blob) {
+        blob = await new Promise(r => out.toBlob(r, "image/png", 1.0));
+      }
+
+      const fileName = `Page_${String(i + 1).padStart(padLen, "0")}${ext}`;
+      zip.file(fileName, blob);
+
+      out.width = out.height = 0;
+      cv.width = cv.height = 0;
+    }
+
+    setProgress(0.94, "Compressing ZIP archive…");
+    await frame();
+
+    const zipBlob = await zip.generateAsync({ type: "blob", compression: "DEFLATE", compressionOptions: { level: 6 } }, pr => {
+      setProgress(0.94 + (pr.percent * 0.06 / 100), `Compressing ZIP… ${Math.round(pr.percent)}%`);
+    });
+
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(zipBlob);
+    a.download = zipName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 9000);
+
+    toast(`${zipName} exported — ${fmtBytes(zipBlob.size)} · ${total} ${fmt.toUpperCase()} images`, "ok", 6000);
+  } catch (err) {
+    if (err.message === "cancelled") toast("Export cancelled", "warn");
+    else toast("Export failed: " + (err.message || "unknown error"), "error", 6000);
   }
   hideProgress();
 }
