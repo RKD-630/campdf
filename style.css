@@ -111,14 +111,14 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
   font-family:var(--font-disp);font-weight:800;font-size:.78rem;box-shadow:0 6px 14px -6px color-mix(in srgb,var(--accent) 70%, transparent)}
 .brand-text strong{font-family:var(--font-disp);font-weight:800;font-size:1.05rem;display:block;line-height:1.05}
 .brand-text span{font-family:var(--font-mono);font-size:.6rem;letter-spacing:.14em;color:var(--muted);text-transform:uppercase}
-.top-corner-actions{display:flex;align-items:center;gap:6px;margin-left:auto}
-.tb-actions{display:flex;align-items:center;gap:7px;overflow-x:auto;padding:2px;scrollbar-width:none}
+.top-corner-actions{display:flex;align-items:center;gap:6px;margin-left:6px}
+.tb-actions{display:flex;align-items:center;gap:7px;margin-left:auto;overflow-x:auto;padding:2px;scrollbar-width:none}
 .tb-actions::-webkit-scrollbar{display:none}
 .tb-actions .btn{min-height:40px;padding:8px 13px;font-size:.84rem}
 @media(max-width:760px){
-  #topbar{position:relative;padding-right:96px}
-  .top-corner-actions{position:absolute;top:10px;right:12px;margin-left:0;z-index:50}
-  .top-corner-actions .ib{width:38px;height:38px}
+  #topbar{position:relative}
+  .top-corner-actions{margin-left:auto}
+  .top-corner-actions .ib{width:36px;height:36px}
   .tb-actions{margin-left:0;width:100%}
   .tb-actions .lbl{display:none}
 }
@@ -203,10 +203,12 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .pc-name{font-weight:600;font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pc-meta{font-family:var(--font-mono);font-size:.66rem;color:var(--muted);margin-top:3px;display:flex;align-items:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pc-meta span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pc-del-btn{flex:none;color:var(--danger);background:rgba(217,45,32,0.08);border-color:rgba(217,45,32,0.22);width:28px;height:28px;padding:0;border-radius:6px;display:flex;align-items:center;justify-content:center;transition:all .15s ease}
-.pc-del-btn:hover{background:var(--danger);color:#ffffff;border-color:var(--danger);transform:scale(1.06)}
+.pc-del-btn{position:absolute;top:7px;right:40px;z-index:8;flex:none;color:var(--danger);background:rgba(255,255,255,0.85);backdrop-filter:blur(4px);border:1px solid rgba(217,45,32,0.3);width:28px;height:28px;padding:0;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:all .15s ease;box-shadow:0 2px 6px rgba(0,0,0,0.25);touch-action:manipulation}
+.pc-del-btn:hover{background:var(--danger);color:#ffffff;border-color:var(--danger);transform:scale(1.1);box-shadow:0 3px 10px rgba(217,45,32,0.4)}
 .pc-del-btn svg{width:14px;height:14px}
-.pc-actions{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;padding:8px 12px 6px}
+[data-theme="dark"] .pc-del-btn{background:rgba(20,27,43,0.85);color:#ff5c5c;border-color:rgba(255,92,92,0.4)}
+.pc-actions{display:flex;align-items:center;justify-content:center;gap:10px;padding:8px 12px 10px}
+.pc-actions .ib{flex:none;width:36px;height:36px}
 .pc-edit{padding:0 12px 13px}
 .pc-edit .btn{width:100%;min-height:38px;font-size:.82rem}
 #wsFoot{margin-top:34px;text-align:center;font-family:var(--font-mono);font-size:.66rem;letter-spacing:.1em;color:var(--muted);text-transform:uppercase}

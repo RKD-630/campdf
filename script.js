@@ -452,14 +452,11 @@ function makeCard(p,i){
         '<div class="pc-name" title="'+p.name+'">'+p.name+'</div>'+
         '<div class="pc-meta">'+pcMetaHTML(p)+'</div>'+
       '</div>'+
-      '<button class="ib sm pc-del-btn" data-act="del" title="Delete page"><svg><use href="#i-trash"/></svg></button>'+
     '</div>'+
     '<div class="pc-actions">'+
       '<button class="ib sm" data-act="moveL" title="Move left"><svg><use href="#i-left"/></svg></button>'+
-      '<button class="ib sm" data-act="moveR" title="Move right"><svg><use href="#i-right"/></svg></button>'+
-      '<button class="ib sm" data-act="dup" title="Duplicate"><svg><use href="#i-copy"/></svg></button>'+
       '<button class="ib sm" data-act="preview" title="Preview"><svg><use href="#i-eye"/></svg></button>'+
-      '<button class="ib sm" data-act="edit" title="Edit page"><svg><use href="#i-edit"/></svg></button>'+
+      '<button class="ib sm" data-act="moveR" title="Move right"><svg><use href="#i-right"/></svg></button>'+
     '</div>';
   attachCardDragEvents(card);
   io.observe(card);
@@ -766,7 +763,7 @@ function updateStats(){
   $("#chipFiles").textContent=state.files.size+" files";
   $("#chipSize").textContent=fmtBytes(bytes);
   const has=state.pages.length>0;
-  ["btnAddPage","btnEdit","btnFitReset","btnClear","btnPreview"].forEach(id=>{
+  ["btnAddPage","btnEdit","btnDup","btnFitReset","btnClear","btnPreview"].forEach(id=>{
     const el=$("#"+id); if(el) el.disabled=!has;
   });
   updateSelectedStats();
@@ -2144,6 +2141,23 @@ $("#btnEdit").onclick=()=>{
   const id=state.lastSelected!=null&&idxOf(state.lastSelected)>=0?state.lastSelected:state.pages[0].id;
   openEditor(id);
 };
+if($("#btnDup")){
+  $("#btnDup").onclick=()=>{
+    if(!state.pages.length)return;
+    const id=state.lastSelected!=null&&idxOf(state.lastSelected)>=0?state.lastSelected:state.pages[0].id;
+    const i=idxOf(id); if(i<0)return;
+    const p=state.pages[i];
+    pushHistory();
+    const clone=JSON.parse(JSON.stringify(p)); clone.id=state.nextId++;
+    clone.edits.texts.forEach(t=>t.id=state.nextId++);
+    state.pages.splice(i+1,0,clone);
+    const card=grid.querySelector('.pcard[data-id="'+id+'"]');
+    const nc=makeCard(clone,i+1);
+    if(card) card.after(nc); else renderGrid();
+    paintCardThumb(nc,clone);
+    renumber(); updateStats(); buildStrip(); toast("Page duplicated","ok",1600);
+  };
+}
 document.addEventListener("keydown",e=>{
   if((e.ctrlKey||e.metaKey)&&!e.shiftKey&&e.key.toLowerCase()==="z"){e.preventDefault();undo();}
   else if((e.ctrlKey||e.metaKey)&&(e.key.toLowerCase()==="y"||(e.shiftKey&&e.key.toLowerCase()==="z"))){e.preventDefault();redo();}
