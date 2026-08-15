@@ -246,6 +246,8 @@
       </section>
       <section data-panel="arrange">
         <h3><svg><use href="#i-arrange"/></svg> Arrange Page</h3>
+        <div class="btn-row"><button class="btn" id="arMoveL"><svg><use href="#i-left"/></svg> Move Prev</button>
+          <button class="btn" id="arMoveR"><svg><use href="#i-right"/></svg> Move Next</button></div>
         <div class="btn-row"><button class="btn" id="arRotL"><svg><use href="#i-rotccw"/></svg> Rotate ⟲</button>
           <button class="btn" id="arRotR"><svg><use href="#i-rotcw"/></svg> Rotate ⟳</button></div>
         <div class="btn-row"><button class="btn" id="arDup"><svg><use href="#i-copy"/></svg> Duplicate</button>
@@ -274,8 +276,9 @@
   </header>
   <div id="pvStage"><canvas id="pvCanvas"></canvas></div>
   <footer id="pvNav">
-    <button class="ib" id="pvPrev"><svg><use href="#i-left"/></svg></button>
-    <button class="ib" id="pvNext"><svg><use href="#i-right"/></svg></button>
+    <button class="ib" id="pvPrev" title="Previous page"><svg><use href="#i-left"/></svg></button>
+    <span id="pvCountNav" class="mono" style="color:#ffffff;font-size:0.95rem;font-weight:600;letter-spacing:0.05em;padding:0 8px;user-select:none">1 / 1</span>
+    <button class="ib" id="pvNext" title="Next page"><svg><use href="#i-right"/></svg></button>
   </footer>
 </section>
 

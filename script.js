@@ -628,10 +628,15 @@ function attachCardDragEvents(card){
 }
 
 let draggedStripIndex = null;
+let touchStripBtn = null;
+let touchStripIndex = null;
+let isStripDragging = false;
+
 function attachStripDragEvents(btn){
   btn.draggable = true;
   btn.addEventListener("dragstart", e => {
     isInternalCardDrag = true;
+    isStripDragging = true;
     draggedStripIndex = state.pages.findIndex(p => p.id === +btn.dataset.id);
     btn.classList.add("dragging");
     e.dataTransfer.effectAllowed = "move";
@@ -644,6 +649,7 @@ function attachStripDragEvents(btn){
     $$("#edStrip .strip-item").forEach(b => b.classList.remove("drag-over"));
     draggedStripIndex = null;
     isInternalCardDrag = false;
+    setTimeout(() => { isStripDragging = false; }, 100);
   });
 
   btn.addEventListener("dragover", e => {
@@ -665,6 +671,7 @@ function attachStripDragEvents(btn){
     e.stopPropagation();
     isInternalCardDrag = false;
     btn.classList.remove("drag-over");
+    setTimeout(() => { isStripDragging = false; }, 100);
     if(draggedStripIndex === null) return;
 
     const targetIndex = state.pages.findIndex(p => p.id === +btn.dataset.id);
@@ -677,7 +684,54 @@ function attachStripDragEvents(btn){
     renderGrid();
     buildStrip();
     renumber();
+    if(state.editingId != null) loadEditorPage();
     toast(`Moved page to position ${targetIndex + 1}`, "ok", 1200);
+  });
+
+  btn.addEventListener("touchstart", e => {
+    if(e.touches.length !== 1) return;
+    touchStripBtn = btn;
+    touchStripIndex = state.pages.findIndex(p => p.id === +btn.dataset.id);
+  }, { passive: true });
+
+  btn.addEventListener("touchmove", e => {
+    if(!touchStripBtn || e.touches.length !== 1) return;
+    const touch = e.touches[0];
+    const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
+    $$("#edStrip .strip-item").forEach(b => b.classList.remove("drag-over"));
+    if(targetEl){
+      const targetBtn = targetEl.closest("#edStrip .strip-item");
+      if(targetBtn && targetBtn !== touchStripBtn){
+        targetBtn.classList.add("drag-over");
+      }
+    }
+  }, { passive: true });
+
+  btn.addEventListener("touchend", e => {
+    if(!touchStripBtn) return;
+    $$("#edStrip .strip-item").forEach(b => b.classList.remove("drag-over"));
+    const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
+    if(targetEl){
+      const targetBtn = targetEl.closest("#edStrip .strip-item");
+      if(targetBtn && targetBtn !== touchStripBtn){
+        const targetIndex = state.pages.findIndex(p => p.id === +targetBtn.dataset.id);
+        if(targetIndex !== -1 && touchStripIndex !== null && targetIndex !== touchStripIndex){
+          isStripDragging = true;
+          setTimeout(() => { isStripDragging = false; }, 100);
+          pushHistory();
+          const [movedPage] = state.pages.splice(touchStripIndex, 1);
+          state.pages.splice(targetIndex, 0, movedPage);
+
+          renderGrid();
+          buildStrip();
+          renumber();
+          if(state.editingId != null) loadEditorPage();
+          toast(`Moved page to position ${targetIndex + 1}`, "ok", 1200);
+        }
+      }
+    }
+    touchStripBtn = null;
+    touchStripIndex = null;
   });
 }
 function renderGrid(){
@@ -984,6 +1038,10 @@ function fitView(){
   applyView();
 }
 function applyView(){
+  if(view.scale <= 1.05){
+    view.x=(stageWrap.clientWidth-pageBox.offsetWidth)/2;
+    view.y=(stageWrap.clientHeight-pageBox.offsetHeight)/2;
+  }
   stage.style.transform="translate("+view.x+"px,"+view.y+"px) scale("+view.scale+")";
   $("#zoomLbl").textContent=Math.round(view.scale*100)+"%";
 }
@@ -1021,8 +1079,11 @@ stageWrap.addEventListener("pointermove",e=>{
     view.y=(mid.y-r.top)-((pinch.mid0.y-r.top)-pinch.y0)*k;
     applyView();
   } else if(activePts.size===1&&panLast){
-    view.x+=e.clientX-panLast.x; view.y+=e.clientY-panLast.y;
-    panLast={x:e.clientX,y:e.clientY}; applyView();
+    if(view.scale > 1.05){
+      view.x+=e.clientX-panLast.x; view.y+=e.clientY-panLast.y;
+      applyView();
+    }
+    panLast={x:e.clientX,y:e.clientY};
   }
 });
 function endPt(e){activePts.delete(e.pointerId); if(activePts.size < 2)pinch=null; if(!activePts.size)panLast=null;}
@@ -1609,6 +1670,28 @@ textsLayer.addEventListener("pointerup",endTxt);
 textsLayer.addEventListener("pointercancel",endTxt);
 
 /* ---- arrange ---- */
+if($("#arMoveL")){
+  $("#arMoveL").onclick=()=>{
+    const p=curPage();if(!p)return;
+    const i=idxOf(p.id); if(i<=0)return;
+    pushHistory();
+    const [moved]=state.pages.splice(i,1);
+    state.pages.splice(i-1,0,moved);
+    renderGrid();buildStrip();renumber();loadEditorPage();
+    toast(`Moved page to position ${i}`, "ok", 1200);
+  };
+}
+if($("#arMoveR")){
+  $("#arMoveR").onclick=()=>{
+    const p=curPage();if(!p)return;
+    const i=idxOf(p.id); if(i<0 || i>=state.pages.length-1)return;
+    pushHistory();
+    const [moved]=state.pages.splice(i,1);
+    state.pages.splice(i+1,0,moved);
+    renderGrid();buildStrip();renumber();loadEditorPage();
+    toast(`Moved page to position ${i+2}`, "ok", 1200);
+  };
+}
 $("#arRotL").onclick=()=>{const p=curPage();if(!p)return;pushHistory();
   p.rotation=(((p.rotation-90)%360)+360)%360;repaintEditor();refreshThumbFor(p);updateEditorHeader();};
 $("#arRotR").onclick=()=>{const p=curPage();if(!p)return;pushHistory();
@@ -1640,6 +1723,7 @@ function buildStrip(){
     b.className="strip-item"+(p.id===state.editingId?" on":""); b.dataset.id=p.id; b.type="button";
     b.innerHTML='<div class="ph"></div><b>'+pad2(i+1)+'</b>';
     b.onclick=()=>{
+      if(isStripDragging) return;
       if(state.editingId===p.id)return;
       state.editingId=p.id; selTextId=null; adjDirty=false;
       loadEditorPage(); highlightStrip();
@@ -1680,7 +1764,9 @@ async function showPvPage(i){
   if(!state.pages.length)return;
   pvIdx=(i+state.pages.length)%state.pages.length;
   const p=state.pages[pvIdx];
-  $("#pvCount").textContent="PAGE "+(pvIdx+1)+" / "+state.pages.length;
+  const countStr=(pvIdx+1)+" / "+state.pages.length;
+  if($("#pvCount")) $("#pvCount").textContent="PAGE "+countStr;
+  if($("#pvCountNav")) $("#pvCountNav").textContent=countStr;
   $("#pvName").textContent=p.name;
   const token=++pvToken;
   const stageEl=$("#pvStage");
