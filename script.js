@@ -26,7 +26,7 @@ const state={pages:[],files:new Map(),images:new Map(),nextId:1,lastSelected:nul
 let undoStack=[],redoStack=[],adjDirty=false,textPropDirty=false,exportCancelled=false;
 const DEFAULT_ADJ=()=>({brightness:0,contrast:0,darkness:0,sharpness:0,hue:0,saturation:0,exposure:0,opacity:100});
 function newPage(o){return Object.assign({id:state.nextId++,kind:"image",fileId:null,pageIndex:0,imgId:null,
-  name:"page",sizeBytes:0,baseW:100,baseH:100,rotation:0,pts:null,
+  name:"page",sizeBytes:0,baseW:100,baseH:100,rotation:0,pts:null,selected:true,
   edits:{crop:null,adj:DEFAULT_ADJ(),filter:"original",texts:[],erases:[]}},o);}
 const curPage=()=>state.pages.find(p=>p.id===state.editingId)||null;
 const idxOf=id=>state.pages.findIndex(p=>p.id===id);
@@ -232,7 +232,7 @@ function drawTexts(ctx,page,W,H){
       ctx.beginPath();
       if(ctx.roundRect)ctx.roundRect(rx,ry,rw2,rh2,rr); else ctx.rect(rx,ry,rw2,rh2);
       ctx.fill(); }
-    if(t.shadow){ctx.shadowColor="rgba(0,0,0,.5)";ctx.shadowBlur=fs*0.18;ctx.shadowOffsetY=fs*0.07;}
+    if(t.shadow){ctx.shadowColor=t.shadowColor||"rgba(0,0,0,.5)";ctx.shadowBlur=fs*0.18;ctx.shadowOffsetY=fs*0.07;}
     ctx.fillStyle=t.color; ctx.textBaseline="top";
     lines.forEach((ln,i)=>{
       let lx=x; ctx.textAlign="left";
@@ -407,15 +407,17 @@ async function importFiles(list, opts = {}) {
 
 $("#importInput").addEventListener("change", e => { importFiles(e.target.files); e.target.value = ""; });
 if ($("#quickImportInput")) $("#quickImportInput").addEventListener("change", e => { importFiles(e.target.files, { isQuickMode: true }); e.target.value = ""; });
-$("#btnImport").onclick = $("#heroImport").onclick = () => $("#importInput").click();
+if ($("#btnImport")) $("#btnImport").onclick = () => $("#importInput").click();
+if ($("#heroImport")) $("#heroImport").onclick = () => $("#importInput").click();
 if ($("#btnQuickImport")) $("#btnQuickImport").onclick = () => $("#quickImportInput").click();
 if ($("#heroQuickImport")) $("#heroQuickImport").onclick = () => $("#quickImportInput").click();
 let dragDepth=0;
-addEventListener("dragenter",e=>{if(e.dataTransfer&&[...e.dataTransfer.types].includes("Files")){dragDepth++;document.body.classList.add("dragging-file");}});
-addEventListener("dragleave",()=>{if(--dragDepth<=0){dragDepth=0;document.body.classList.remove("dragging-file");}});
-addEventListener("dragover",e=>e.preventDefault());
+let isInternalCardDrag=false;
+addEventListener("dragenter",e=>{if(!isInternalCardDrag&&e.dataTransfer&&[...e.dataTransfer.types].includes("Files")){dragDepth++;document.body.classList.add("dragging-file");}});
+addEventListener("dragleave",()=>{if(!isInternalCardDrag&&--dragDepth<=0){dragDepth=0;document.body.classList.remove("dragging-file");}});
+addEventListener("dragover",e=>{e.preventDefault();if(isInternalCardDrag)e.dataTransfer.dropEffect="move";});
 addEventListener("drop",e=>{e.preventDefault();dragDepth=0;document.body.classList.remove("dragging-file");
-  if(e.dataTransfer.files&&e.dataTransfer.files.length)importFiles(e.dataTransfer.files);});
+  if(!isInternalCardDrag&&e.dataTransfer.files&&e.dataTransfer.files.length)importFiles(e.dataTransfer.files);});
 
 /* ============ grid ============ */
 const grid=$("#grid");
@@ -428,11 +430,15 @@ const io=new IntersectionObserver(entries=>{
 },{rootMargin:"700px"});
 function makeCard(p,i){
   const card=document.createElement("article");
-  card.className="pcard"; card.dataset.id=p.id; card.style.setProperty("--i",Math.min(i,24));
+  card.className="pcard"+(p.selected!==false?" selected":""); card.dataset.id=p.id; card.style.setProperty("--i",Math.min(i,24));
   const kind=p.kind==="pdf"?"PDF":"IMG";
   card.innerHTML=
     '<div class="pc-thumb" data-act="edit" title="Open in editor">'+
       '<div class="thumb-load"></div>'+
+      '<label class="pg-chk" title="Select page for PDF export" onclick="event.stopPropagation()">'+
+        '<input type="checkbox" class="pg-select-chk" data-id="'+p.id+'" '+(p.selected!==false?'checked':'')+' />'+
+        '<span class="pg-chk-mark"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>'+
+      '</label>'+
       '<span class="p-num">Page '+pad2(i+1)+'</span>'+
       '<span class="p-kind '+(p.kind==="pdf"?"pdf":"img")+'">'+kind+'</span>'+
     '</div>'+
@@ -451,6 +457,7 @@ function makeCard(p,i){
       '<button class="ib sm" data-act="preview" title="Preview"><svg><use href="#i-eye"/></svg></button>'+
       '<button class="ib sm" data-act="edit" title="Edit page"><svg><use href="#i-edit"/></svg></button>'+
     '</div>';
+  attachCardDragEvents(card);
   io.observe(card);
   return card;
 }
@@ -479,6 +486,200 @@ async function paintCardThumb(card,p){
     }
   }
 }
+
+function getDragInsertPosition(card, clientX, clientY) {
+  const rect = card.getBoundingClientRect();
+  const dx = (clientX - rect.left) / rect.width;
+  const dy = (clientY - rect.top) / rect.height;
+  let side = "left", isBefore = true;
+  if (dy < 0.35) {
+    side = "top"; isBefore = true;
+  } else if (dy > 0.65) {
+    side = "bottom"; isBefore = false;
+  } else if (dx < 0.5) {
+    side = "left"; isBefore = true;
+  } else {
+    side = "right"; isBefore = false;
+  }
+  return { side, isBefore };
+}
+
+function clearCardDragClasses() {
+  grid.querySelectorAll(".pcard").forEach(c => {
+    c.classList.remove("drag-over-left", "drag-over-right", "drag-over-top", "drag-over-bottom");
+  });
+}
+
+let draggedCardIndex = null;
+let touchDragCard = null;
+let touchDragIndex = null;
+
+function attachCardDragEvents(card){
+  card.draggable = true;
+  card.addEventListener("dragstart", e => {
+    if(e.target.closest("button") || e.target.closest("input") || e.target.closest("label")){
+      e.preventDefault(); return;
+    }
+    isInternalCardDrag = true;
+    draggedCardIndex = state.pages.findIndex(p => p.id === +card.dataset.id);
+    card.classList.add("dragging");
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", card.dataset.id);
+    e.stopPropagation();
+  });
+
+  card.addEventListener("dragend", () => {
+    card.classList.remove("dragging");
+    clearCardDragClasses();
+    draggedCardIndex = null;
+    isInternalCardDrag = false;
+  });
+
+  card.addEventListener("dragover", e => {
+    e.preventDefault();
+    e.stopPropagation();
+    if(draggedCardIndex === null) return;
+    const targetIndex = state.pages.findIndex(p => p.id === +card.dataset.id);
+    if(targetIndex === -1 || targetIndex === draggedCardIndex) return;
+
+    e.dataTransfer.dropEffect = "move";
+    clearCardDragClasses();
+    const { side } = getDragInsertPosition(card, e.clientX, e.clientY);
+    card.classList.add("drag-over-" + side);
+  });
+
+  card.addEventListener("dragleave", () => {
+    clearCardDragClasses();
+  });
+
+  card.addEventListener("drop", e => {
+    e.preventDefault();
+    e.stopPropagation();
+    isInternalCardDrag = false;
+    clearCardDragClasses();
+    if(draggedCardIndex === null) return;
+
+    const targetIndex = state.pages.findIndex(p => p.id === +card.dataset.id);
+    if(targetIndex === -1 || targetIndex === draggedCardIndex) return;
+
+    const { isBefore } = getDragInsertPosition(card, e.clientX, e.clientY);
+    let insertIndex = isBefore ? targetIndex : targetIndex + 1;
+    if(draggedCardIndex < insertIndex) insertIndex--;
+
+    pushHistory();
+    const [movedPage] = state.pages.splice(draggedCardIndex, 1);
+    state.pages.splice(insertIndex, 0, movedPage);
+
+    renderGrid();
+    buildStrip();
+    renumber();
+    toast(`Moved page to position ${insertIndex + 1}`, "ok", 1200);
+  });
+
+  card.addEventListener("touchstart", e => {
+    if(e.touches.length !== 1) return;
+    if(e.target.closest("button") || e.target.closest("input") || e.target.closest("label")) return;
+    touchDragCard = card;
+    touchDragIndex = state.pages.findIndex(p => p.id === +card.dataset.id);
+  }, { passive: true });
+
+  card.addEventListener("touchmove", e => {
+    if(!touchDragCard || e.touches.length !== 1) return;
+    const touch = e.touches[0];
+    const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
+    clearCardDragClasses();
+    if(targetEl){
+      const targetCard = targetEl.closest(".pcard");
+      if(targetCard && targetCard !== touchDragCard){
+        const { side } = getDragInsertPosition(targetCard, touch.clientX, touch.clientY);
+        targetCard.classList.add("drag-over-" + side);
+      }
+    }
+  }, { passive: true });
+
+  card.addEventListener("touchend", e => {
+    if(!touchDragCard) return;
+    const touch = e.changedTouches[0];
+    clearCardDragClasses();
+    const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
+    if(targetEl){
+      const targetCard = targetEl.closest(".pcard");
+      if(targetCard && targetCard !== touchDragCard){
+        const targetIndex = state.pages.findIndex(p => p.id === +targetCard.dataset.id);
+        if(targetIndex !== -1 && touchDragIndex !== null && targetIndex !== touchDragIndex){
+          const { isBefore } = getDragInsertPosition(targetCard, touch.clientX, touch.clientY);
+          let insertIndex = isBefore ? targetIndex : targetIndex + 1;
+          if(touchDragIndex < insertIndex) insertIndex--;
+
+          pushHistory();
+          const [movedPage] = state.pages.splice(touchDragIndex, 1);
+          state.pages.splice(insertIndex, 0, movedPage);
+
+          renderGrid();
+          buildStrip();
+          renumber();
+          toast(`Moved page to position ${insertIndex + 1}`, "ok", 1200);
+        }
+      }
+    }
+    touchDragCard = null;
+    touchDragIndex = null;
+  });
+}
+
+let draggedStripIndex = null;
+function attachStripDragEvents(btn){
+  btn.draggable = true;
+  btn.addEventListener("dragstart", e => {
+    isInternalCardDrag = true;
+    draggedStripIndex = state.pages.findIndex(p => p.id === +btn.dataset.id);
+    btn.classList.add("dragging");
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", btn.dataset.id);
+    e.stopPropagation();
+  });
+
+  btn.addEventListener("dragend", () => {
+    btn.classList.remove("dragging");
+    $$("#edStrip .strip-item").forEach(b => b.classList.remove("drag-over"));
+    draggedStripIndex = null;
+    isInternalCardDrag = false;
+  });
+
+  btn.addEventListener("dragover", e => {
+    e.preventDefault();
+    e.stopPropagation();
+    if(draggedStripIndex === null) return;
+    const targetIndex = state.pages.findIndex(p => p.id === +btn.dataset.id);
+    if(targetIndex === -1 || targetIndex === draggedStripIndex) return;
+    e.dataTransfer.dropEffect = "move";
+    btn.classList.add("drag-over");
+  });
+
+  btn.addEventListener("dragleave", () => {
+    btn.classList.remove("drag-over");
+  });
+
+  btn.addEventListener("drop", e => {
+    e.preventDefault();
+    e.stopPropagation();
+    isInternalCardDrag = false;
+    btn.classList.remove("drag-over");
+    if(draggedStripIndex === null) return;
+
+    const targetIndex = state.pages.findIndex(p => p.id === +btn.dataset.id);
+    if(targetIndex === -1 || targetIndex === draggedStripIndex) return;
+
+    pushHistory();
+    const [movedPage] = state.pages.splice(draggedStripIndex, 1);
+    state.pages.splice(targetIndex, 0, movedPage);
+
+    renderGrid();
+    buildStrip();
+    renumber();
+    toast(`Moved page to position ${targetIndex + 1}`, "ok", 1200);
+  });
+}
 function renderGrid(){
   grid.innerHTML="";
   const frag=document.createDocumentFragment();
@@ -503,19 +704,43 @@ function refreshCardFx(p){
 }
 function updateStats(){
   const bytes=[...state.files.values()].reduce((s,f)=>s+f.size,0);
-  $("#docStats").textContent="Pages: "+state.pages.length+" | Files: "+state.files.size+" | Size: "+fmtBytes(bytes);
   $("#chipPages").textContent=state.pages.length+" pages";
   $("#chipFiles").textContent=state.files.size+" files";
   $("#chipSize").textContent=fmtBytes(bytes);
   const has=state.pages.length>0;
-  ["btnAddPage","btnEdit","btnClear","btnPreview","btnExportZip"].forEach(id=>{
+  ["btnAddPage","btnEdit","btnClear","btnPreview"].forEach(id=>{
     const el=$("#"+id); if(el) el.disabled=!has;
   });
+  updateSelectedStats();
+}
+function updateSelectedStats(){
+  const sel=state.pages.filter(p=>p.selected!==false);
+  const count=sel.length;
+  if($("#selCount")) $("#selCount").textContent=count;
+  if($("#btnExportSelected")) $("#btnExportSelected").disabled=(count===0);
+  const chkAll=$("#chkSelectAll");
+  if(chkAll){
+    const total=state.pages.length;
+    chkAll.checked=total>0 && count===total;
+    chkAll.indeterminate=count>0 && count<total;
+  }
 }
 function switchView(){
   const has=state.pages.length>0;
   $("#heroView").hidden=has; $("#workspaceView").hidden=!has;
 }
+grid.addEventListener("change",e=>{
+  if(e.target.classList.contains("pg-select-chk")){
+    const id=+e.target.dataset.id;
+    const p=state.pages.find(x=>x.id===id);
+    if(p){
+      p.selected=e.target.checked;
+      const card=grid.querySelector('.pcard[data-id="'+id+'"]');
+      if(card) card.classList.toggle("selected",p.selected);
+      updateSelectedStats();
+    }
+  }
+});
 grid.addEventListener("click",async e=>{
   const card=e.target.closest(".pcard"); if(!card)return;
   const id=+card.dataset.id,i=idxOf(id),p=state.pages[i]; if(!p)return;
@@ -870,21 +1095,12 @@ function buildAdjustUI() {
           <span class="adj-opt-dot"></span>
           <svg><use href="#${c.icon}"/></svg>
           <span class="adj-opt-label">${c.name}</span>
-          <span class="adj-opt-val">0</span>
         </button>`;
       }).join('') +
     `</div>` +
     `<div class="vol-controller">
-      <div class="vol-slider-header">
-        <span class="vol-slider-title" id="volSliderTitle">BRIGHTNESS</span>
-        <span class="vol-slider-value" id="volSliderValue">0</span>
-      </div>
       <div class="vol-slider-fallback">
         <input type="range" id="volRangeFallback" />
-        <div class="vol-slider-range-labels">
-          <span id="volMinLabel">-100</span>
-          <span id="volMaxLabel">+100</span>
-        </div>
       </div>
     </div>`;
 
@@ -922,25 +1138,11 @@ function syncSlidersFromPage() {
     if (btn) {
       btn.classList.toggle('on', k === activeAdj);
       btn.classList.toggle('modified', val !== cfg.def);
-      const valEl = btn.querySelector('.adj-opt-val');
-      if (valEl) valEl.textContent = (val > 0 ? '+' : '') + val + cfg.unit;
     }
   });
 
   const curCfg = ADJ_CONFIG[activeAdj];
   const curVal = p.edits.adj[activeAdj] ?? curCfg.def;
-
-  const titleEl = $('#volSliderTitle');
-  if (titleEl) titleEl.textContent = curCfg.name.toUpperCase();
-
-  const valEl = $('#volSliderValue');
-  if (valEl) valEl.textContent = (curVal > 0 ? '+' : '') + curVal + curCfg.unit;
-
-  const minEl = $('#volMinLabel');
-  if (minEl) minEl.textContent = curCfg.min + curCfg.unit;
-
-  const maxEl = $('#volMaxLabel');
-  if (maxEl) maxEl.textContent = (curCfg.max > 0 ? '+' : '') + curCfg.max + curCfg.unit;
 
   const rangeFB = $('#volRangeFallback');
   if (rangeFB) {
@@ -1195,7 +1397,7 @@ $("#addTextBtn").onclick=()=>{
   const p=curPage(); if(!p)return;
   pushHistory();
   const t={id:state.nextId++,text:"Double-tap to edit",x:0.24,y:0.42,w:0.52,size:0.055,
-    font:"Arial",color:"#111111",bg:"",align:"center",bold:false,italic:false,underline:false,
+    font:"Arial",color:"#111111",shadowColor:"#000000",bg:"",align:"center",bold:false,italic:false,underline:false,
     opacity:1,rot:0,shadow:false};
   p.edits.texts.push(t); selTextId=t.id;
   syncTexts(); renderTextList(); refreshTextProps();
@@ -1217,10 +1419,12 @@ function syncTexts(){
     el.style.color=t.color; el.style.background=t.bg||"transparent";
     el.style.textAlign=t.align; el.style.opacity=clamp(t.opacity,0,1);
     el.style.transform="rotate("+(t.rot||0)+"deg)";
-    el.style.textShadow=t.shadow?"0 .08em .25em rgba(0,0,0,.55)":"none";
+    el.style.textShadow=t.shadow?("0 .08em .25em "+(t.shadowColor||"#000000")):"none";
     el.textContent=t.text;
     if(t.id===selTextId){
-      const h=document.createElement("span"); h.className="txt-rs"; el.appendChild(h);
+      ["tl","tr","bl","br"].forEach(pos=>{
+        const h=document.createElement("span"); h.className="txt-rs "+pos; el.appendChild(h);
+      });
     }
     textsLayer.appendChild(el);
   });
@@ -1250,11 +1454,16 @@ function renderTextList(){
 function refreshTextProps(){
   const t=selText(); $("#textProps").hidden=!t;
   if(!t)return; textPropDirty=false;
+  const input=$("#tInput"); if(input) input.value=t.text||"";
   $("#tFont").value=t.font; $("#tSize").value=t.size;
   $("#vTSize").textContent=Math.round(t.size*pageBox.clientHeight)+" px";
   $("#tBold").classList.toggle("on",t.bold); $("#tItalic").classList.toggle("on",t.italic);
   $("#tUnder").classList.toggle("on",t.underline); $("#tShadow").classList.toggle("on",t.shadow);
-  $("#tColor").value=t.color||"#111111"; $("#tBg").value=t.bg||"#ffffff";
+  $("#tColor").value=t.color||"#111111";
+  if($("#tShadowColor")) $("#tShadowColor").value=t.shadowColor||"#000000";
+  $("#tBg").value=t.bg||"#ffffff";
+  if($("#tBgTrans")) $("#tBgTrans").checked=!t.bg;
+  $$("[data-bg]").forEach(chip=>chip.classList.toggle("on",chip.dataset.bg===(t.bg||"")));
   $$("[data-talign]").forEach(b=>b.classList.toggle("on",b.dataset.talign===t.align));
   $("#tOpacity").value=t.opacity; $("#vTOp").textContent=Math.round(t.opacity*100)+"%";
   $("#tRot").value=t.rot||0; $("#vTRot").textContent=(t.rot||0)+"°";
@@ -1264,6 +1473,7 @@ function textChanged(fn){
   if(!textPropDirty){pushHistory();textPropDirty=true;}
   fn(t); syncTexts();
 }
+$("#tInput").oninput=e=>textChanged(t=>{t.text=e.target.value; renderTextList();});
 $("#tFont").onchange=e=>textChanged(t=>{t.font=e.target.value;});
 $("#tSize").oninput=e=>textChanged(t=>{t.size=+e.target.value;$("#vTSize").textContent=Math.round(t.size*pageBox.clientHeight)+" px";});
 $("#tBold").onclick=()=>textChanged(t=>{t.bold=!t.bold;$("#tBold").classList.toggle("on",t.bold);});
@@ -1271,8 +1481,31 @@ $("#tItalic").onclick=()=>textChanged(t=>{t.italic=!t.italic;$("#tItalic").class
 $("#tUnder").onclick=()=>textChanged(t=>{t.underline=!t.underline;$("#tUnder").classList.toggle("on",t.underline);});
 $("#tShadow").onclick=()=>textChanged(t=>{t.shadow=!t.shadow;$("#tShadow").classList.toggle("on",t.shadow);});
 $("#tColor").oninput=e=>textChanged(t=>{t.color=e.target.value;});
-$("#tBg").oninput=e=>textChanged(t=>{t.bg=e.target.value;});
-$("#tBgNone").onclick=()=>textChanged(t=>{t.bg="";});
+if($("#tShadowColor")){
+  $("#tShadowColor").oninput=e=>textChanged(t=>{
+    t.shadowColor=e.target.value;
+    t.shadow=true;
+    $("#tShadow").classList.add("on");
+    syncTexts();
+  });
+}
+$("#tBg").oninput=e=>textChanged(t=>{
+  t.bg=e.target.value;
+  if($("#tBgTrans")) $("#tBgTrans").checked=false;
+  refreshTextProps();
+});
+if($("#tBgTrans")){
+  $("#tBgTrans").onchange=e=>textChanged(t=>{
+    if(e.target.checked) t.bg="";
+    else t.bg=$("#tBg").value||"#ffffff";
+    refreshTextProps();
+  });
+}
+$$("[data-bg]").forEach(chip=>chip.onclick=()=>textChanged(t=>{
+  t.bg=chip.dataset.bg;
+  if($("#tBgTrans")) $("#tBgTrans").checked=false;
+  refreshTextProps();
+}));
 $$("[data-talign]").forEach(b=>b.onclick=()=>textChanged(t=>{
   t.align=b.dataset.talign;
   $$("[data-talign]").forEach(x=>x.classList.toggle("on",x===b));
@@ -1286,34 +1519,61 @@ $("#tDelete").onclick=()=>{
   selTextId=null; syncTexts(); renderTextList(); refreshTextProps();
 };
 /* text drag / resize / edit */
+function startEditingText(el, t){
+  if(!el||!t)return;
+  el.contentEditable="true";
+  el.classList.add("editing");
+  el.focus();
+  try{
+    const sel=window.getSelection(), r=document.createRange();
+    r.selectNodeContents(el); sel.removeAllRanges(); sel.addRange(r);
+  }catch(err){}
+  pushHistory();
+  let done=false;
+  const finish=()=>{
+    if(done)return; done=true;
+    el.contentEditable="false"; el.classList.remove("editing");
+    t.text=(el.innerText||el.textContent||"").replace(/\u00a0/g," ").trim()||"Text";
+    syncTexts(); renderTextList(); refreshTextProps();
+  };
+  el.onblur=finish;
+  el.onkeydown=e=>{ if(e.key==="Escape") el.blur(); };
+}
+
 let txtDrag=null,lastTap={id:null,t:0};
 textsLayer.addEventListener("pointerdown",e=>{
   const el=e.target.closest(".txt"); if(!el)return;
+  if(el.isContentEditable || el.classList.contains("editing")) return;
   e.stopPropagation(); e.preventDefault();
   const tid=+el.dataset.tid;
   selectText(tid);
-  const p=curPage(),t=p.edits.texts.find(x=>x.id===tid); if(!t)return;
+  const p=curPage(),t=p ? p.edits.texts.find(x=>x.id===tid) : null; if(!t)return;
   const now=Date.now();
   if(lastTap.id===tid && now-lastTap.t < 350){
-    el.contentEditable="true"; el.classList.add("editing"); el.focus();
-    pushHistory();
-    el.onblur=()=>{
-      el.contentEditable="false"; el.classList.remove("editing");
-      t.text=(el.innerText||"").replace(/\u00a0/g," ");
-      syncTexts(); renderTextList();
-    };
+    startEditingText(el, t);
     return;
   }
   lastTap={id:tid,t:now};
   if(e.target.classList.contains("txt-rs")){
     const r=el.getBoundingClientRect();
-    txtDrag={mode:"resize",t:t,el:el,sx:e.clientX,sy:e.clientY,size0:t.size,
-      d0:Math.max(10,Math.hypot(e.clientX-r.left,e.clientY-r.top)),moved:false};
+    const cx=r.left + r.width / 2;
+    const cy=r.top + r.height / 2;
+    const d0=Math.max(15, Math.hypot(e.clientX - cx, e.clientY - cy));
+    txtDrag={mode:"resize",t:t,el:el,cx:cx,cy:cy,size0:t.size,d0:d0,moved:false};
   } else {
     txtDrag={mode:"move",t:t,el:el,lx:e.clientX,ly:e.clientY,moved:false};
   }
   el.setPointerCapture(e.pointerId);
 });
+
+textsLayer.addEventListener("dblclick",e=>{
+  const el=e.target.closest(".txt"); if(!el)return;
+  const tid=+el.dataset.tid;
+  selectText(tid);
+  const p=curPage(),t=p ? p.edits.texts.find(x=>x.id===tid) : null;
+  if(t) startEditingText(el, t);
+});
+
 textsLayer.addEventListener("pointermove",e=>{
   if(!txtDrag)return;
   const p=curPage(); if(!p)return;
@@ -1321,18 +1581,30 @@ textsLayer.addEventListener("pointermove",e=>{
     const dx=e.clientX-txtDrag.lx,dy=e.clientY-txtDrag.ly;
     if(Math.abs(dx)+Math.abs(dy)>2&&!txtDrag.moved){pushHistory();txtDrag.moved=true;}
     const kN=1/(pageBox.clientWidth*view.scale);
-    txtDrag.t.x=clamp(txtDrag.t.x+dx*kN,-0.2,1.05);
-    txtDrag.t.y=clamp(txtDrag.t.y+dy/(pageBox.clientHeight*view.scale),-0.2,1.05);
+    txtDrag.t.x=clamp(txtDrag.t.x+dx*kN,-0.5,1.5);
+    txtDrag.t.y=clamp(txtDrag.t.y+dy/(pageBox.clientHeight*view.scale),-0.5,1.5);
     txtDrag.lx=e.clientX; txtDrag.ly=e.clientY;
     txtDrag.el.style.left=(txtDrag.t.x*100)+"%"; txtDrag.el.style.top=(txtDrag.t.y*100)+"%";
-  } else {
-    const d=Math.max(10,Math.hypot(e.clientX-txtDrag.sx,e.clientY-txtDrag.sy));
+  } else if(txtDrag.mode==="resize") {
+    const d=Math.max(10, Math.hypot(e.clientX - txtDrag.cx, e.clientY - txtDrag.cy));
     if(!txtDrag.moved){pushHistory();txtDrag.moved=true;}
-    txtDrag.t.size=clamp(txtDrag.size0*d/txtDrag.d0,0.008,0.4);
-    syncTexts(); refreshTextProps();
+    const newSize=clamp(txtDrag.size0 * (d / txtDrag.d0), 0.008, 0.5);
+    txtDrag.t.size=newSize;
+    const H=pageBox.clientHeight;
+    txtDrag.el.style.fontSize=Math.max(6, newSize * H) + "px";
+    const vSize=$("#vTSize"); if(vSize) vSize.textContent=Math.round(newSize * H) + " px";
+    const tSize=$("#tSize"); if(tSize) tSize.value=newSize;
   }
 });
-function endTxt(e){if(txtDrag){txtDrag=null;}}
+function endTxt(e){
+  if(txtDrag){
+    if(txtDrag.moved){
+      syncTexts();
+      refreshTextProps();
+    }
+    txtDrag=null;
+  }
+}
 textsLayer.addEventListener("pointerup",endTxt);
 textsLayer.addEventListener("pointercancel",endTxt);
 
@@ -1372,6 +1644,7 @@ function buildStrip(){
       state.editingId=p.id; selTextId=null; adjDirty=false;
       loadEditorPage(); highlightStrip();
     };
+    attachStripDragEvents(b);
     s.appendChild(b);
     ensureThumb(p,160).then(url=>{
       if(!b.isConnected)return;
@@ -1448,9 +1721,12 @@ $("#btnPreview").onclick=()=>openPreview(Math.max(0,idxOf(state.lastSelected)));
 /* ============ save / export ============ */
 const QUAL={small:{dpi:100,q:0.6,bpp:0.09},standard:{dpi:150,q:0.75,bpp:0.13},high:{dpi:220,q:0.86,bpp:0.18},max:{dpi:300,q:0.93,bpp:0.24}};
 let curQuality="standard";
-function estimateSize(qk){
+let curExpTargetPages=null;
+
+function estimateSize(qk, pagesList=null){
+  const pages = (pagesList && pagesList.length) ? pagesList : (curExpTargetPages || state.pages);
   const Q=QUAL[qk]; let bytes=0;
-  state.pages.forEach(p=>{
+  pages.forEach(p=>{
     const dim=pagePhysical(p);
     const wpx=dim[0]*Q.dpi/72,hpx=dim[1]*Q.dpi/72;
     bytes+=wpx*hpx*Q.bpp+700;
@@ -1460,13 +1736,17 @@ function estimateSize(qk){
 let curExpMode = "pdf";
 let curZipFmt = "jpg";
 
-function openSaveModal(mode) {
+function openSaveModal(mode, customPages=null) {
   if (!state.pages.length) return;
   curExpMode = mode || "pdf";
+  curExpTargetPages = customPages;
 
-  const base = (state.pages[0].name || "document").replace(/\.[^.]+$/, "").replace(/[\\/:*?"<>|]/g, "_").slice(0, 60) || "My_Document";
-  $("#saveName").value = base + ".pdf";
-  if ($("#zipSaveName")) $("#zipSaveName").value = base + "_images.zip";
+  const pagesToUse = (curExpTargetPages && curExpTargetPages.length) ? curExpTargetPages : state.pages;
+  const count = pagesToUse.length;
+
+  const base = (pagesToUse[0].name || "document").replace(/\.[^.]+$/, "").replace(/[\\/:*?"<>|]/g, "_").slice(0, 60) || "My_Document";
+  $("#saveName").value = base + (curExpTargetPages ? "_selected" : "") + ".pdf";
+  if ($("#zipSaveName")) $("#zipSaveName").value = base + (curExpTargetPages ? "_selected_images.zip" : "_images.zip");
 
   $$("#expModeSeg button").forEach(b => b.classList.toggle("on", b.dataset.exp === curExpMode));
   if ($("#pdfExportOpts")) $("#pdfExportOpts").hidden = curExpMode !== "pdf";
@@ -1476,7 +1756,7 @@ function openSaveModal(mode) {
     o.classList.toggle("sel", o.dataset.q === curQuality);
     o.querySelector("input").checked = o.dataset.q === curQuality;
   });
-  $("#estLine").textContent = "Estimated size: ≈ " + fmtBytes(estimateSize(curQuality));
+  $("#estLine").textContent = "Estimated size (" + count + " page" + (count > 1 ? "s" : "") + "): ≈ " + fmtBytes(estimateSize(curQuality, pagesToUse));
   $("#saveModal").hidden = false;
 }
 
@@ -1499,23 +1779,38 @@ $$(".qopt").forEach(o => o.onclick = () => {
 });
 
 if ($("#btnSave")) $("#btnSave").onclick = () => openSaveModal("pdf");
-if ($("#btnExportZip")) $("#btnExportZip").onclick = () => openSaveModal("zip");
+
+if ($("#btnExportSelected")) $("#btnExportSelected").onclick = () => {
+  const sel = state.pages.filter(p => p.selected !== false);
+  if (!sel.length) { toast("Please select at least 1 page to export", "warn"); return; }
+  openSaveModal("pdf", sel);
+};
+if ($("#chkSelectAll")) $("#chkSelectAll").onchange = (e) => {
+  const isChecked = e.target.checked;
+  state.pages.forEach(p => p.selected = isChecked);
+  grid.querySelectorAll(".pg-select-chk").forEach(c => c.checked = isChecked);
+  grid.querySelectorAll(".pcard").forEach(c => c.classList.toggle("selected", isChecked));
+  updateSelectedStats();
+  toast(isChecked ? "All pages selected" : "All pages deselected", "info", 1400);
+};
 
 $("#saveConfirm").onclick = async () => {
+  const pagesToExport = (curExpTargetPages && curExpTargetPages.length) ? curExpTargetPages : state.pages;
   if (curExpMode === "pdf") {
     let name = $("#saveName").value.trim().replace(/[\\/:*?"<>|]/g, "-") || "My_Document.pdf";
     if (!/\.pdf$/i.test(name)) name += ".pdf";
     $("#saveModal").hidden = true;
-    await exportPdf(name, curQuality);
+    await exportPdf(name, curQuality, pagesToExport);
   } else {
     let zipName = $("#zipSaveName").value.trim().replace(/[\\/:*?"<>|]/g, "-") || "My_Images.zip";
     if (!/\.zip$/i.test(zipName)) zipName += ".zip";
     const dpi = +$("#zipDpi").value || 150;
     $("#saveModal").hidden = true;
-    await exportZip(zipName, curZipFmt, dpi);
+    await exportZip(zipName, curZipFmt, dpi, pagesToExport);
   }
 };
-async function exportPdf(name,qKey){
+async function exportPdf(name,qKey,targetPages=null){
+  const pages = (targetPages && targetPages.length) ? targetPages : state.pages;
   const Q=QUAL[qKey];
   showProgress("Saving PDF…",true);
   exportCancelled=false;
@@ -1524,13 +1819,13 @@ async function exportPdf(name,qKey){
     const doc=await PDFLib.PDFDocument.create();
     doc.setTitle(name.replace(/\.pdf$/i,""));
     let bytesSum=0,failed=0;
-    const total=state.pages.length;
+    const total=pages.length;
     for(let i=0; i < total; i++){
       if(exportCancelled)throw new Error("cancelled");
-      const est=bytesSum?(bytesSum/i*total):estimateSize(qKey);
+      const est=bytesSum?(bytesSum/i*total):estimateSize(qKey, pages);
       setProgress(i/total,"Page "+(i+1)+" / "+total+" · ≈ "+fmtBytes(est));
       await frame();
-      const p=state.pages[i];
+      const p=pages[i];
       try{
         const dim=pagePhysical(p),wPt=dim[0],hPt=dim[1];
         let targetW=wPt*Q.dpi/72;
@@ -1568,7 +1863,7 @@ async function exportPdf(name,qKey){
     a.href=URL.createObjectURL(blob); a.download=name;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(()=>URL.revokeObjectURL(a.href),9000);
-    toast(name+" saved — "+fmtBytes(blob.size)+" · "+state.pages.length+" pages","ok",6000);
+    toast(name+" saved — "+fmtBytes(blob.size)+" · "+total+" pages","ok",6000);
   }catch(err){
     if(err.message==="cancelled")toast("Export cancelled","warn");
     else toast("Export failed: "+(err.message||"unknown error"),"error",6000);
@@ -1576,7 +1871,8 @@ async function exportPdf(name,qKey){
   hideProgress();
 }
 
-async function exportZip(zipName, fmt, dpi) {
+async function exportZip(zipName, fmt, dpi, targetPages=null) {
+  const pages = (targetPages && targetPages.length) ? targetPages : state.pages;
   if (!window.JSZip) {
     toast("JSZip library loading. Please check internet connection.", "error");
     return;
@@ -1585,7 +1881,7 @@ async function exportZip(zipName, fmt, dpi) {
   exportCancelled = false;
   try {
     const zip = new JSZip();
-    const total = state.pages.length;
+    const total = pages.length;
     const padLen = total > 99 ? 3 : 2;
 
     let mimeType = "image/jpeg";
@@ -1607,7 +1903,7 @@ async function exportZip(zipName, fmt, dpi) {
       setProgress(i / total, `Encoding Page ${i + 1} / ${total} (${fmt.toUpperCase()})`);
       await frame();
 
-      const p = state.pages[i];
+      const p = pages[i];
       const dim = pagePhysical(p);
       const targetW = dim[0] * (dpi / 72);
       const cv = await renderBase(p, { targetW: targetW });

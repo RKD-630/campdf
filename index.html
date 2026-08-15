@@ -61,9 +61,7 @@
     <div class="brand-mark">PDF</div>
     <div class="brand-text"><strong>PDF Converter</strong><span>local · no upload</span></div>
   </div>
-  <div id="docStats" class="mono">Pages: 0 | Files: 0 | Size: 0 B</div>
   <nav class="tb-actions">
-    <button class="btn" id="btnImport"><svg><use href="#i-import"/></svg><span class="lbl">Import</span></button>
     <button class="btn amber" id="btnQuickImport" title="Lightning fast import for heavy PDF files"><svg><use href="#i-zap"/></svg><span class="lbl">⚡ Quick Import</span></button>
     <button class="btn" id="btnAddPage" disabled=""><svg><use href="#i-addpage"/></svg><span class="lbl">Add Page</span></button>
     <button class="btn" id="btnEdit" disabled=""><svg><use href="#i-edit"/></svg><span class="lbl">Edit</span></button>
@@ -72,7 +70,7 @@
     <button class="ib" id="btnRedo" title="Redo (Ctrl+Y)" disabled=""><svg><use href="#i-redo"/></svg></button>
     <button class="btn" id="btnPreview" disabled=""><svg><use href="#i-eye"/></svg><span class="lbl">Preview</span></button>
     <button class="ib" id="btnTheme" title="Toggle light / dark"><svg><use href="#i-moon"/></svg></button>
-    <button class="btn primary" id="btnExportZip" disabled=""><svg><use href="#i-zip"/></svg><span class="lbl">Export ZIP</span></button>
+    <button class="btn primary" id="btnExportSelected" disabled=""><svg><use href="#i-save"/></svg><span class="lbl">Save PDF (<span id="selCount">0</span>)</span></button>
   </nav>
 </header>
 
@@ -113,6 +111,13 @@
     <span class="chip" id="chipPages">0 pages</span>
     <span class="chip" id="chipFiles">0 files</span>
     <span class="chip" id="chipSize">0 B</span>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:6px">
+      <label class="chk-btn" title="Select or deselect all pages">
+        <input type="checkbox" id="chkSelectAll" checked />
+        <span class="chk-box"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span>Select All</span>
+      </label>
+    </div>
   </div>
   <div id="grid"></div>
   <div id="wsFoot">All processing happens in this browser — your files never leave this device</div>
@@ -204,6 +209,7 @@
         <button class="btn primary" id="addTextBtn" style="width:100%;margin-bottom:12px"><svg><use href="#i-plus"/></svg> Add Text</button>
         <div id="textList"></div>
         <div id="textProps" hidden="">
+          <div class="field"><label>Text content</label><input type="text" id="tInput" placeholder="Type text here..." /></div>
           <div class="field"><label>Font family</label><select id="tFont"></select></div>
           <div class="adj-row"><div class="adj-lab"><span>Font size</span><b class="mono" id="vTSize">–</b></div>
             <input type="range" id="tSize" min="0.012" max="0.2" step="0.002" /></div>
@@ -212,9 +218,21 @@
             <button class="ib sm" id="tItalic" style="font-style:italic;font-weight:700">I</button>
             <button class="ib sm" id="tUnder" style="text-decoration:underline;font-weight:700">U</button>
             <button class="ib sm" id="tShadow" style="text-shadow:0 2px 3px rgba(0,0,0,.7)">S</button></div>
-          <div class="tp-row"><span>Color</span><input type="color" id="tColor" value="#111111" />
-            <span style="width:auto">Bg</span><input type="color" id="tBg" value="#ffffff" />
-            <button class="btn" id="tBgNone" style="min-height:40px">None</button></div>
+          <div class="tp-row"><span>Font Color</span><input type="color" id="tColor" value="#111111" /></div>
+          <div class="tp-row"><span>Shadow Color</span><input type="color" id="tShadowColor" value="#000000" /></div>
+          <div class="tp-row"><span>Bg Color</span><input type="color" id="tBg" value="#ffffff" />
+            <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;font-weight:600;cursor:pointer;user-select:none">
+              <input type="checkbox" id="tBgTrans" /> Transparent
+            </label>
+          </div>
+          <div class="bg-presets" id="tBgPresets" style="display:flex;gap:5px;margin:6px 0 10px;flex-wrap:wrap">
+            <span class="chip" data-bg="#ffeb3b" style="background:#ffeb3b;color:#000;cursor:pointer">Yellow</span>
+            <span class="chip" data-bg="#a5d6a7" style="background:#a5d6a7;color:#000;cursor:pointer">Green</span>
+            <span class="chip" data-bg="#f48fb1" style="background:#f48fb1;color:#000;cursor:pointer">Pink</span>
+            <span class="chip" data-bg="#90caf9" style="background:#90caf9;color:#000;cursor:pointer">Blue</span>
+            <span class="chip" data-bg="#ffffff" style="background:#ffffff;color:#000;border:1px solid rgba(0,0,0,0.2);cursor:pointer">White</span>
+            <span class="chip" data-bg="#111111" style="background:#111111;color:#fff;cursor:pointer">Dark</span>
+          </div>
           <div class="tp-row"><span>Align</span>
             <button class="ib sm" data-talign="left" style="font-weight:800">⇤</button>
             <button class="ib sm" data-talign="center" style="font-weight:800">≡</button>
