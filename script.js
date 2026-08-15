@@ -1850,7 +1850,7 @@ function openPreview(startIdx){
 $("#pvClose").onclick=()=>$("#previewView").hidden=true;
 $("#pvPrev").onclick=()=>showPvPage(pvIdx-1);
 $("#pvNext").onclick=()=>showPvPage(pvIdx+1);
-if($("#pvAdd")) $("#pvAdd").onclick=()=>{const p=state.pages[pvIdx];if(p)openAddPageModal(p.id);};
+if($("#pvCrop")) $("#pvCrop").onclick=async()=>{const p=state.pages[pvIdx];if(p){$("#previewView").hidden=true;await openEditor(p.id);setTool("crop");}};
 if($("#pvReplace")) $("#pvReplace").onclick=()=>{const p=state.pages[pvIdx];if(p){pendingReplace=p.id;$("#replaceInput").click();}};
 function rotatePvPage(dir){
   const p=state.pages[pvIdx];if(!p)return;
