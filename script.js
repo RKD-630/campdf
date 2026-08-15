@@ -766,7 +766,7 @@ function updateStats(){
   $("#chipFiles").textContent=state.files.size+" files";
   $("#chipSize").textContent=fmtBytes(bytes);
   const has=state.pages.length>0;
-  ["btnAddPage","btnEdit","btnClear","btnPreview"].forEach(id=>{
+  ["btnAddPage","btnEdit","btnFitReset","btnClear","btnPreview"].forEach(id=>{
     const el=$("#"+id); if(el) el.disabled=!has;
   });
   updateSelectedStats();
@@ -1055,9 +1055,48 @@ function zoomAt(cx,cy,f){
   const ns=clamp(view.scale*f,0.3,6),k=ns/view.scale;
   view.x=px-(px-view.x)*k; view.y=py-(py-view.y)*k; view.scale=ns; applyView();
 }
+function toggleAppFullscreen(){
+  if(!document.fullscreenElement){
+    if(document.documentElement.requestFullscreen){
+      document.documentElement.requestFullscreen().catch(()=>{});
+    }else if(document.documentElement.webkitRequestFullscreen){
+      document.documentElement.webkitRequestFullscreen();
+    }
+  }else{
+    if(document.exitFullscreen){
+      document.exitFullscreen().catch(()=>{});
+    }else if(document.webkitExitFullscreen){
+      document.webkitExitFullscreen();
+    }
+  }
+}
+document.addEventListener("fullscreenchange",()=>{
+  const isFS=!!document.fullscreenElement;
+  if($("#btnFitReset")) $("#btnFitReset").classList.toggle("on",isFS);
+  if($("#zoomFit")) $("#zoomFit").classList.toggle("on",isFS);
+  setTimeout(()=>{
+    if(state.editingId!=null){
+      layoutPageBox();
+      fitView();
+      if(typeof curTool!=="undefined"&&curTool==="crop"&&typeof initCropBox==="function")initCropBox();
+    }
+  },150);
+});
+
 $("#zoomIn").onclick=()=>zoomAt(stageWrap.getBoundingClientRect().left+stageWrap.clientWidth/2,stageWrap.getBoundingClientRect().top+stageWrap.clientHeight/2,1.25);
 $("#zoomOut").onclick=()=>zoomAt(stageWrap.getBoundingClientRect().left+stageWrap.clientWidth/2,stageWrap.getBoundingClientRect().top+stageWrap.clientHeight/2,0.8);
-$("#zoomFit").onclick=fitView;
+$("#zoomFit").onclick=()=>{
+  toggleAppFullscreen();
+  fitView();
+};
+if($("#btnFitReset")){
+  $("#btnFitReset").onclick=async()=>{
+    toggleAppFullscreen();
+    if(state.editingId!=null){
+      fitView();
+    }
+  };
+}
 stageWrap.addEventListener("wheel",e=>{e.preventDefault();zoomAt(e.clientX,e.clientY,Math.exp(-e.deltaY*0.0016));},{passive:false});
 /* pan + pinch */
 const activePts=new Map(); let pinch=null,panLast=null;
