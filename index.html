@@ -166,7 +166,8 @@
       <section data-panel="crop">
         <h3><svg><use href="#i-crop"/></svg> Crop</h3>
         <div class="ratio-chips" id="ratioChips">
-          <span class="chip on" data-ratio="free">Free</span>
+          <span class="chip on" data-ratio="full">Full Page</span>
+          <span class="chip" data-ratio="free">Free</span>
           <span class="chip" data-ratio="orig">Original</span>
           <span class="chip" data-ratio="a4">A4</span>
           <span class="chip" data-ratio="sq">Square</span>
@@ -280,6 +281,14 @@
     <span id="pvCountNav" class="mono" style="color:#ffffff;font-size:0.95rem;font-weight:600;letter-spacing:0.05em;padding:0 8px;user-select:none">1 / 1</span>
     <button class="ib" id="pvNext" title="Next page"><svg><use href="#i-right"/></svg></button>
   </footer>
+  <div id="pvActions">
+    <button class="btn ghost sm" id="pvAdd" title="Add page after"><svg><use href="#i-plus"/></svg><span>Add Page</span></button>
+    <button class="btn ghost sm" id="pvReplace" title="Replace page"><svg><use href="#i-swap"/></svg><span>Replace</span></button>
+    <button class="btn ghost sm" id="pvRotL" title="Rotate counter-clockwise"><svg><use href="#i-rotccw"/></svg><span>Rotate ⟲</span></button>
+    <button class="btn ghost sm" id="pvRotR" title="Rotate clockwise"><svg><use href="#i-rotcw"/></svg><span>Rotate ⟳</span></button>
+    <button class="btn ghost sm danger" id="pvDelete" title="Delete page"><svg><use href="#i-trash"/></svg><span>Delete</span></button>
+    <button class="btn primary sm" id="pvEdit" title="Edit page"><svg><use href="#i-edit"/></svg><span>Edit Page</span></button>
+  </div>
 </section>
 
 <!-- ================= MODALS ================= -->

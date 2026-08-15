@@ -428,6 +428,11 @@ const io=new IntersectionObserver(entries=>{
     if(p&&card.dataset.thumbKey!==thumbKey(p)&&!card.dataset.loading)paintCardThumb(card,p);
   });
 },{rootMargin:"700px"});
+function pcMetaHTML(p){
+  const sz = p.sizeBytes ? fmtBytes(p.sizeBytes) : "—";
+  const type = p.kind === "pdf" ? "PDF" : "IMAGE";
+  return '<span>' + sz + ' | ' + dimsLabel(p) + ' • ' + type + '</span>';
+}
 function makeCard(p,i){
   const card=document.createElement("article");
   card.className="pcard"+(p.selected!==false?" selected":""); card.dataset.id=p.id; card.style.setProperty("--i",Math.min(i,24));
@@ -442,18 +447,17 @@ function makeCard(p,i){
       '<span class="p-num">Page '+pad2(i+1)+'</span>'+
       '<span class="p-kind '+(p.kind==="pdf"?"pdf":"img")+'">'+kind+'</span>'+
     '</div>'+
-    '<div class="pc-info"><div class="pc-name" title="'+p.name+'">'+p.name+'</div>'+
-      '<div class="pc-meta"><span>'+(p.sizeBytes?fmtBytes(p.sizeBytes):"—")+'</span>'+
-      '<span>'+dimsLabel(p)+' • '+(p.kind==="pdf"?"PDF":"IMAGE")+'</span></div></div>'+
+    '<div class="pc-info">'+
+      '<div class="pc-info-main">'+
+        '<div class="pc-name" title="'+p.name+'">'+p.name+'</div>'+
+        '<div class="pc-meta">'+pcMetaHTML(p)+'</div>'+
+      '</div>'+
+      '<button class="ib sm pc-del-btn" data-act="del" title="Delete page"><svg><use href="#i-trash"/></svg></button>'+
+    '</div>'+
     '<div class="pc-actions">'+
       '<button class="ib sm" data-act="moveL" title="Move left"><svg><use href="#i-left"/></svg></button>'+
       '<button class="ib sm" data-act="moveR" title="Move right"><svg><use href="#i-right"/></svg></button>'+
-      '<button class="ib sm" data-act="add" title="Add page after"><svg><use href="#i-plus"/></svg></button>'+
-      '<button class="ib sm" data-act="replace" title="Replace page"><svg><use href="#i-swap"/></svg></button>'+
       '<button class="ib sm" data-act="dup" title="Duplicate"><svg><use href="#i-copy"/></svg></button>'+
-      '<button class="ib sm" data-act="rotL" title="Rotate counter-clockwise"><svg><use href="#i-rotccw"/></svg></button>'+
-      '<button class="ib sm" data-act="rotR" title="Rotate clockwise"><svg><use href="#i-rotcw"/></svg></button>'+
-      '<button class="ib sm" data-act="del" title="Delete"><svg><use href="#i-trash"/></svg></button>'+
       '<button class="ib sm" data-act="preview" title="Preview"><svg><use href="#i-eye"/></svg></button>'+
       '<button class="ib sm" data-act="edit" title="Edit page"><svg><use href="#i-edit"/></svg></button>'+
     '</div>';
@@ -826,7 +830,7 @@ grid.addEventListener("click",async e=>{
   if(act==="rotL"||act==="rotR"){
     pushHistory();
     p.rotation=(((p.rotation+(act==="rotR"?90:-90))%360)+360)%360;
-    card.querySelector(".pc-meta").innerHTML='<span>'+(p.sizeBytes?fmtBytes(p.sizeBytes):"—")+'</span><span>'+dimsLabel(p)+' • '+(p.kind==="pdf"?"PDF":"IMAGE")+'</span>';
+    card.querySelector(".pc-meta").innerHTML=pcMetaHTML(p);
     refreshThumbFor(p);
     if(state.editingId===id)repaintEditor();
     return;
@@ -875,6 +879,7 @@ $("#replaceInput").addEventListener("change",async e=>{
     const card=grid.querySelector('.pcard[data-id="'+np.id+'"]');
     if(card){const fresh=makeCard(np,i);card.replaceWith(fresh);paintCardThumb(fresh,np);renumber();}
     if(state.editingId===np.id){loadEditorPage();}
+    if(!$("#previewView").hidden && pvIdx===i){showPvPage(i);}
     toast("Page "+pad2(i+1)+" replaced","ok");
   }catch(err){hideProgress();loadError(err,f.name);}
 });
@@ -1152,7 +1157,7 @@ function buildAdjustUI() {
     `<div class="adj-options-grid">` +
       keys.map(k => {
         const c = ADJ_CONFIG[k];
-        return `<button class="adj-opt-btn" id="adj-opt-${k}" data-mode="${k}">
+        return `<button class="adj-opt-btn" id="adj-opt-${k}" data-mode="${k}" title="${c.name}">
           <span class="adj-opt-dot"></span>
           <svg><use href="#${c.icon}"/></svg>
           <span class="adj-opt-label">${c.name}</span>
@@ -1221,7 +1226,7 @@ $("#adjReset").onclick=()=>{
   syncSlidersFromPage(); redrawDisplay(); liveFx(); refreshThumbFor(p);
   toast("Adjustments reset","info",1500);
 };
-$("#adjApply").onclick=()=>{adjDirty=false;refreshThumbFor(curPage());toast("Adjustments applied to page","ok",1800);closeEditor();};
+$("#adjApply").onclick=()=>{adjDirty=false;refreshThumbFor(curPage());toast("Adjustments applied to page","ok",1800);};
 let compareOn=false;
 function compareStart(){
   if(compareOn||!editorBase)return; compareOn=true;
@@ -1243,9 +1248,12 @@ let cropBoxPx=null,cropRatio=null,cropDrag=null;
 function initCropBox(){
   const p=curPage(); if(!p)return;
   const W=pageBox.clientWidth,H=pageBox.clientHeight; if(!W||!H)return;
+  const isFull = !p.edits.crop;
   cropBoxPx=p.edits.crop
     ?{x:p.edits.crop.x*W,y:p.edits.crop.y*H,w:p.edits.crop.w*W,h:p.edits.crop.h*H}
-    :{x:W*0.06,y:H*0.06,w:W*0.88,h:H*0.88};
+    :{x:0,y:0,w:W,h:H};
+  cropRatio=null;
+  $$("#ratioChips .chip").forEach(x=>x.classList.toggle("on",x.dataset.ratio===(isFull?"full":"free")));
   positionCropDom();
 }
 function positionCropDom(){
@@ -1306,7 +1314,14 @@ $$("#ratioChips .chip").forEach(ch=>ch.onclick=()=>{
   $$("#ratioChips .chip").forEach(x=>x.classList.remove("on")); ch.classList.add("on");
   const kind=ch.dataset.ratio;
   $("#customRatio").hidden=kind!=="custom";
-  const p=curPage(); if(!p||!cropBoxPx)return;
+  const p=curPage(); if(!p)return;
+  const W=pageBox.clientWidth,H=pageBox.clientHeight; if(!W||!H)return;
+  if(kind==="full"){
+    cropRatio=null;
+    cropBoxPx={x:0,y:0,w:W,h:H};
+    positionCropDom();
+    return;
+  }
   if(kind==="free"){cropRatio=null;return;}
   if(kind==="custom")return;
   let r;
@@ -1314,10 +1329,11 @@ $$("#ratioChips .chip").forEach(ch=>ch.onclick=()=>{
     r=p.baseW/p.baseH; if(p.rotation%180)r=1/r;
     if(p.edits.crop)r*=p.edits.crop.w/p.edits.crop.h;
   } else if(kind==="a4"){
-    r=cropBoxPx.w>=cropBoxPx.h?1.4142:1/1.4142;
+    r=(cropBoxPx?cropBoxPx.w:W)>=(cropBoxPx?cropBoxPx.h:H)?1.4142:1/1.4142;
   } else r=1;
   cropRatio=r;
-  cropBoxPx=enforceRatio("se",Object.assign({},cropBoxPx),r,pageBox.clientWidth,pageBox.clientHeight);
+  const curB = cropBoxPx || {x:0,y:0,w:W,h:H};
+  cropBoxPx=enforceRatio("se",Object.assign({},curB),r,W,H);
   positionCropDom();
 });
 $("#crSet").onclick=()=>{
@@ -1339,13 +1355,13 @@ $("#cropApply").onclick=async()=>{
   await repaintEditor();
   refreshThumbFor(p); updateEditorHeader(); setTool("adjust");
   toast(abs?"Crop applied":"Crop removed (frame covered whole page)","ok",2000);
-  closeEditor();
 };
 $("#cropReset").onclick=async()=>{
-  const p=curPage(); if(!p||!p.edits.crop)return;
+  const p=curPage(); if(!p)return;
   pushHistory(); p.edits.crop=null;
-  await repaintEditor(); refreshThumbFor(p); updateEditorHeader(); setTool("adjust");
-  toast("Crop reset","info",1500);
+  await repaintEditor(); refreshThumbFor(p); updateEditorHeader();
+  initCropBox();
+  toast("Crop reset to full page","info",1500);
 };
 
 /* ---- erase ---- */
@@ -1425,8 +1441,8 @@ $("#eraseClear").onclick=()=>{
 };
 $("#eraseApply").onclick=()=>{
   refreshThumbFor(curPage());
+  setTool("adjust");
   toast("Erase applied to page","ok",1800);
-  closeEditor();
 };
 
 /* ---- filters ---- */
@@ -1795,6 +1811,44 @@ function openPreview(startIdx){
 $("#pvClose").onclick=()=>$("#previewView").hidden=true;
 $("#pvPrev").onclick=()=>showPvPage(pvIdx-1);
 $("#pvNext").onclick=()=>showPvPage(pvIdx+1);
+if($("#pvAdd")) $("#pvAdd").onclick=()=>{const p=state.pages[pvIdx];if(p)openAddPageModal(p.id);};
+if($("#pvReplace")) $("#pvReplace").onclick=()=>{const p=state.pages[pvIdx];if(p){pendingReplace=p.id;$("#replaceInput").click();}};
+function rotatePvPage(dir){
+  const p=state.pages[pvIdx];if(!p)return;
+  pushHistory();
+  p.rotation=(((p.rotation+dir)%360)+360)%360;
+  refreshThumbFor(p);
+  const card=grid.querySelector('.pcard[data-id="'+p.id+'"]');
+  if(card)card.querySelector(".pc-meta").innerHTML=pcMetaHTML(p);
+  if(state.editingId===p.id)repaintEditor();
+  showPvPage(pvIdx);
+}
+if($("#pvRotL")) $("#pvRotL").onclick=()=>rotatePvPage(-90);
+if($("#pvRotR")) $("#pvRotR").onclick=()=>rotatePvPage(90);
+if($("#pvDelete")){
+  $("#pvDelete").onclick=async()=>{
+    const p=state.pages[pvIdx];if(!p)return;
+    const i=pvIdx;
+    const ok=await confirmDialog({title:"Delete Page "+pad2(i+1)+"?",msg:'"'+p.name+'" will be removed. You can press Undo to restore.',okLabel:"Delete"});
+    if(!ok)return;
+    pushHistory();
+    state.pages.splice(i,1);
+    renderGrid();updateStats();buildStrip();
+    if(state.editingId===p.id)closeEditor();
+    if(!state.pages.length){
+      $("#previewView").hidden=true; switchView(); toast("Document is now empty","info"); return;
+    }
+    toast("Page "+pad2(i+1)+" deleted","info",1800);
+    showPvPage(Math.min(i,state.pages.length-1));
+  };
+}
+if($("#pvEdit")){
+  $("#pvEdit").onclick=()=>{
+    const p=state.pages[pvIdx];if(!p)return;
+    $("#previewView").hidden=true;
+    openEditor(p.id);
+  };
+}
 let pvSwipeX=null;
 $("#pvStage").addEventListener("pointerdown",e=>{pvSwipeX=e.clientX;});
 $("#pvStage").addEventListener("pointerup",e=>{
