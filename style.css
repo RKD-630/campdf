@@ -325,22 +325,42 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 }
 
 /* ================= PREVIEW ================= */
-#previewView{position:fixed;inset:0;z-index:80;background:rgba(6,9,17,.94);display:flex;flex-direction:column;color:#eef1f8}
-#pvTop{display:flex;align-items:center;gap:12px;padding:12px 16px}
-#pvTop .mono{font-size:.74rem;letter-spacing:.1em}
+#previewView{position:fixed;inset:0;z-index:80;background:rgba(245,247,252,.96);backdrop-filter:blur(16px);display:flex;flex-direction:column;color:var(--ink);transition:background .2s,color .2s}
+#pvTop{display:flex;align-items:center;gap:12px;padding:12px 16px;color:var(--ink)}
+#pvTop .mono{font-size:.74rem;letter-spacing:.1em;color:var(--muted)}
 #pvStage{flex:1;display:grid;place-items:center;overflow:hidden;padding:12px;touch-action:pan-y}
-#pvCanvas{max-width:100%;max-height:100%;box-shadow:0 30px 80px -20px rgba(0,0,0,.8);border-radius:3px;background:#fff}
+#pvCanvas{max-width:100%;max-height:100%;box-shadow:0 20px 60px -15px rgba(16,24,40,.25);border-radius:4px;background:#fff;border:1px solid var(--line2)}
 #pvNav{display:flex;align-items:center;justify-content:center;gap:16px;padding:10px 0 4px}
-#pvNav .ib{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.2);color:#fff;width:44px;height:44px}
+#pvNav .ib{background:var(--surface);border:1px solid var(--line2);color:var(--ink);width:44px;height:44px;box-shadow:var(--shadow)}
+#pvNav .ib svg{color:var(--ink)}
+#pvNav .ib:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-1px)}
+#pvNav .ib:hover svg{color:var(--accent)}
+#pvNav .ib:disabled{opacity:.35;pointer-events:none}
 #pvActions{display:flex;align-items:center;justify-content:center;gap:8px;padding:6px 12px calc(14px + env(safe-area-inset-bottom));flex-wrap:wrap}
-#pvActions .btn{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.2);color:#ffffff;font-size:0.8rem;min-height:36px;padding:6px 12px;border-radius:8px}
-#pvActions .btn svg{color:#ffffff}
-#pvActions .btn:hover{background:rgba(255,255,255,.18);border-color:#ffffff;transform:translateY(-1px)}
+#pvActions .btn{background:var(--surface);border:1px solid var(--line2);color:var(--ink);font-size:0.8rem;min-height:36px;padding:6px 12px;border-radius:8px;box-shadow:var(--shadow)}
+#pvActions .btn svg{color:var(--ink)}
+#pvActions .btn:hover{background:var(--surface2);border-color:var(--accent);transform:translateY(-1px)}
 #pvActions .btn.primary{background:#5027F5;border-color:#5027F5;color:#ffffff}
 #pvActions .btn.primary svg{color:#ffffff}
 #pvActions .btn.primary:hover{background:#3c19cf;border-color:#3c19cf}
-#pvActions .btn.danger{background:rgba(217,45,32,0.85);border-color:var(--danger);color:#ffffff}
-#pvActions .btn.danger:hover{background:var(--danger);border-color:var(--danger)}
+#pvActions .btn.danger{background:var(--danger);border-color:var(--danger);color:#ffffff}
+#pvActions .btn.danger svg{color:#ffffff}
+#pvActions .btn.danger:hover{background:#b91c1c;border-color:#b91c1c}
+
+[data-theme="dark"] #previewView{background:rgba(6,9,17,.95);color:#eef1f8}
+[data-theme="dark"] #pvTop{color:#eef1f8}
+[data-theme="dark"] #pvTop .mono{color:var(--muted)}
+[data-theme="dark"] #pvCanvas{box-shadow:0 30px 80px -20px rgba(0,0,0,.8);border-color:transparent}
+[data-theme="dark"] #pvNav .ib{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.2);color:#ffffff;box-shadow:none}
+[data-theme="dark"] #pvNav .ib svg{color:#ffffff}
+[data-theme="dark"] #pvNav .ib:hover{background:rgba(255,255,255,.18);border-color:#ffffff;color:#ffffff}
+[data-theme="dark"] #pvNav .ib:hover svg{color:#ffffff}
+[data-theme="dark"] #pvActions .btn{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.2);color:#ffffff;box-shadow:none}
+[data-theme="dark"] #pvActions .btn svg{color:#ffffff}
+[data-theme="dark"] #pvActions .btn:hover{background:rgba(255,255,255,.18);border-color:#ffffff}
+[data-theme="dark"] #pvActions .btn.primary{background:#ffffff;border-color:#ffffff;color:#000000}
+[data-theme="dark"] #pvActions .btn.primary svg{color:#000000}
+[data-theme="dark"] #pvActions .btn.primary:hover{background:#e2e8f0;border-color:#e2e8f0}
 @media (max-width:600px){
   #pvActions{gap:8px;padding:6px 12px calc(14px + env(safe-area-inset-bottom));justify-content:center}
   #pvActions .btn{min-height:42px;height:42px;min-width:42px;padding:0;border-radius:10px;display:inline-flex;align-items:center;justify-content:center}
