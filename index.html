@@ -115,12 +115,16 @@
     <span class="chip" id="chipPages">0 pages</span>
     <span class="chip" id="chipFiles">0 files</span>
     <span class="chip" id="chipSize">0 B</span>
-    <div style="margin-left:auto;display:flex;align-items:center;gap:6px">
+    <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
       <label class="chk-btn" title="Select or deselect all pages">
         <input type="checkbox" id="chkSelectAll" checked />
         <span class="chk-box"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
         <span>Select All</span>
       </label>
+      <button class="btn danger sm" id="btnStatsDeleteSelected" disabled="" title="Delete selected pages" style="min-height:30px;padding:4px 10px;font-size:0.78rem;gap:5px">
+        <svg style="width:14px;height:14px"><use href="#i-trash"/></svg>
+        <span id="lblStatsDeleteSelected">Delete</span>
+      </button>
     </div>
   </div>
   <div id="grid"></div>

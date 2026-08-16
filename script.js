@@ -440,7 +440,7 @@ function makeCard(p,i){
   card.innerHTML=
     '<div class="pc-thumb" data-act="edit" title="Open in editor">'+
       '<div class="thumb-load"></div>'+
-      '<label class="pg-chk" title="Select page for PDF export" onclick="event.stopPropagation()">'+
+      '<label class="pg-chk" title="Select page for export or deletion" onclick="event.stopPropagation()">'+
         '<input type="checkbox" class="pg-select-chk" data-id="'+p.id+'" '+(p.selected!==false?'checked':'')+' />'+
         '<span class="pg-chk-mark"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>'+
       '</label>'+
@@ -773,6 +773,17 @@ function updateSelectedStats(){
   const count=sel.length;
   if($("#selCount")) $("#selCount").textContent=count;
   if($("#btnExportSelected")) $("#btnExportSelected").disabled=(count===0);
+
+  const btnDelSel = $("#btnDeleteSelected");
+  if (btnDelSel) btnDelSel.disabled = (count === 0);
+  const lblDelSel = $("#lblDeleteSelected");
+  if (lblDelSel) lblDelSel.textContent = count > 0 ? `Delete (${count})` : "Delete";
+
+  const btnStatsDel = $("#btnStatsDeleteSelected");
+  if (btnStatsDel) btnStatsDel.disabled = (count === 0);
+  const lblStatsDel = $("#lblStatsDeleteSelected");
+  if (lblStatsDel) lblStatsDel.textContent = count > 0 ? `Delete (${count})` : "Delete";
+
   const chkAll=$("#chkSelectAll");
   if(chkAll){
     const total=state.pages.length;
@@ -888,6 +899,50 @@ async function importImageFilePop(file){
   return newPage({kind:"image",imgId:imgId,fileId:fileId,name:file.name,sizeBytes:file.size,
     baseW:src.width||src.naturalWidth,baseH:src.height||src.naturalHeight});
 }
+async function deleteSelectedPages() {
+  const selectedPages = state.pages.filter(p => p.selected !== false);
+  const count = selectedPages.length;
+  if (!count) {
+    toast("Please select at least 1 page to delete", "warn");
+    return;
+  }
+  const isAll = count === state.pages.length;
+  const ok = await confirmDialog({
+    title: isAll ? "Delete all pages?" : `Delete ${count} selected page${count > 1 ? "s" : ""}?`,
+    msg: isAll ? "All pages in the document will be deleted. You can press Undo to restore them." : `${count} selected page${count > 1 ? "s" : ""} will be removed from the document. You can press Undo to restore them.`,
+    okLabel: `Delete (${count})`,
+    danger: true
+  });
+  if (!ok) return;
+
+  pushHistory();
+  const selectedIds = new Set(selectedPages.map(p => p.id));
+  state.pages = state.pages.filter(p => !selectedIds.has(p.id));
+
+  clearThumbCache();
+  renderGrid();
+  updateStats();
+  buildStrip();
+
+  if (state.editingId != null && selectedIds.has(state.editingId)) {
+    if (state.pages.length) {
+      state.editingId = state.pages[0].id;
+      loadEditorPage();
+    } else {
+      closeEditor();
+    }
+  }
+
+  if (!state.pages.length) {
+    switchView();
+  }
+
+  toast(`${count} selected page${count > 1 ? "s" : ""} deleted`, "info", 2000);
+}
+
+if ($("#btnDeleteSelected")) $("#btnDeleteSelected").onclick = deleteSelectedPages;
+if ($("#btnStatsDeleteSelected")) $("#btnStatsDeleteSelected").onclick = deleteSelectedPages;
+
 $("#btnClear").onclick=async()=>{
   const ok=await confirmDialog({title:"Clear document?",msg:"All pages will be removed. This cannot be undone.",okLabel:"Clear all"});
   if(!ok)return;
@@ -1535,8 +1590,8 @@ function syncTexts(){
     el.style.textShadow=t.shadow?("0 .08em .25em "+(t.shadowColor||"#000000")):"none";
     el.textContent=t.text;
     if(t.id===selTextId){
-      ["tl","tr","bl","br"].forEach(pos=>{
-        const h=document.createElement("span"); h.className="txt-rs "+pos; el.appendChild(h);
+      ["tl","tr","bl","br","e","w"].forEach(pos=>{
+        const h=document.createElement("span"); h.className="txt-rs "+pos; h.dataset.pos=pos; el.appendChild(h);
       });
     }
     textsLayer.appendChild(el);
@@ -1668,11 +1723,23 @@ textsLayer.addEventListener("pointerdown",e=>{
   }
   lastTap={id:tid,t:now};
   if(e.target.classList.contains("txt-rs")){
+    const pos = e.target.dataset.pos || (
+      e.target.classList.contains("tl") ? "tl" :
+      e.target.classList.contains("tr") ? "tr" :
+      e.target.classList.contains("bl") ? "bl" :
+      e.target.classList.contains("br") ? "br" :
+      e.target.classList.contains("e")  ? "e"  : "w"
+    );
     const r=el.getBoundingClientRect();
     const cx=r.left + r.width / 2;
     const cy=r.top + r.height / 2;
-    const d0=Math.max(15, Math.hypot(e.clientX - cx, e.clientY - cy));
-    txtDrag={mode:"resize",t:t,el:el,cx:cx,cy:cy,size0:t.size,d0:d0,moved:false};
+
+    if(pos === "e" || pos === "w"){
+      txtDrag={mode:"resizeWidth",handlePos:pos,t:t,el:el,startX:e.clientX,w0:t.w,moved:false};
+    } else {
+      const d0=Math.max(15, Math.hypot(e.clientX - cx, e.clientY - cy));
+      txtDrag={mode:"resizeSize",handlePos:pos,t:t,el:el,cx:cx,cy:cy,size0:t.size,d0:d0,moved:false};
+    }
   } else {
     txtDrag={mode:"move",t:t,el:el,lx:e.clientX,ly:e.clientY,moved:false};
   }
@@ -1698,7 +1765,7 @@ textsLayer.addEventListener("pointermove",e=>{
     txtDrag.t.y=clamp(txtDrag.t.y+dy/(pageBox.clientHeight*view.scale),-0.5,1.5);
     txtDrag.lx=e.clientX; txtDrag.ly=e.clientY;
     txtDrag.el.style.left=(txtDrag.t.x*100)+"%"; txtDrag.el.style.top=(txtDrag.t.y*100)+"%";
-  } else if(txtDrag.mode==="resize") {
+  } else if(txtDrag.mode==="resizeSize") {
     const d=Math.max(10, Math.hypot(e.clientX - txtDrag.cx, e.clientY - txtDrag.cy));
     if(!txtDrag.moved){pushHistory();txtDrag.moved=true;}
     const newSize=clamp(txtDrag.size0 * (d / txtDrag.d0), 0.008, 0.5);
@@ -1707,6 +1774,14 @@ textsLayer.addEventListener("pointermove",e=>{
     txtDrag.el.style.fontSize=Math.max(6, newSize * H) + "px";
     const vSize=$("#vTSize"); if(vSize) vSize.textContent=Math.round(newSize * H) + " px";
     const tSize=$("#tSize"); if(tSize) tSize.value=newSize;
+  } else if(txtDrag.mode==="resizeWidth") {
+    const dx=e.clientX-txtDrag.startX;
+    if(Math.abs(dx)>1&&!txtDrag.moved){pushHistory();txtDrag.moved=true;}
+    const pageW=pageBox.clientWidth*view.scale;
+    const deltaRatio=(txtDrag.handlePos==="w"?-dx:dx)/pageW;
+    const newW=clamp(txtDrag.w0+deltaRatio,0.05,1.0);
+    txtDrag.t.w=newW;
+    txtDrag.el.style.width=(newW*100)+"%";
   }
 });
 function endTxt(e){
