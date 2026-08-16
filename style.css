@@ -327,10 +327,11 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 /* ================= PREVIEW ================= */
 #previewView{position:fixed;inset:0;z-index:80;background:rgba(245,247,252,.96);backdrop-filter:blur(16px);display:flex;flex-direction:column;color:var(--ink);transition:background .2s,color .2s}
 #pvTop{display:flex;align-items:center;gap:12px;padding:12px 16px;color:var(--ink)}
-#pvTop .mono{font-size:.74rem;letter-spacing:.1em;color:var(--muted)}
+#pvTop .mono{font-size:.74rem;letter-spacing:.1em;color:var(--ink);font-weight:600}
 #pvStage{flex:1;display:grid;place-items:center;overflow:hidden;padding:12px;touch-action:pan-y}
 #pvCanvas{max-width:100%;max-height:100%;box-shadow:0 20px 60px -15px rgba(16,24,40,.25);border-radius:4px;background:#fff;border:1px solid var(--line2)}
 #pvNav{display:flex;align-items:center;justify-content:center;gap:16px;padding:10px 0 4px}
+#pvNav .mono, #pvNav span, #pvPageNum, #pvCountNav{color:#000000;font-weight:700;font-size:.95rem;letter-spacing:.05em;padding:0 8px;user-select:none}
 #pvNav .ib{background:var(--surface);border:1px solid var(--line2);color:var(--ink);width:44px;height:44px;box-shadow:var(--shadow)}
 #pvNav .ib svg{color:var(--ink)}
 #pvNav .ib:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-1px)}
@@ -351,6 +352,7 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 [data-theme="dark"] #pvTop{color:#eef1f8}
 [data-theme="dark"] #pvTop .mono{color:var(--muted)}
 [data-theme="dark"] #pvCanvas{box-shadow:0 30px 80px -20px rgba(0,0,0,.8);border-color:transparent}
+[data-theme="dark"] #pvNav .mono, [data-theme="dark"] #pvNav span, [data-theme="dark"] #pvPageNum, [data-theme="dark"] #pvCountNav{color:#ffffff}
 [data-theme="dark"] #pvNav .ib{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.2);color:#ffffff;box-shadow:none}
 [data-theme="dark"] #pvNav .ib svg{color:#ffffff}
 [data-theme="dark"] #pvNav .ib:hover{background:rgba(255,255,255,.18);border-color:#ffffff;color:#ffffff}
