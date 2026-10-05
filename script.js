@@ -390,19 +390,27 @@ async function importFiles(list, opts = {}) {
   }
   showProgress(isQuickMode ? "⚡ Quick Importing heavy PDF…" : "Importing files…"); pushHistory();
   let okC = 0, failC = 0, pageC = 0;
+  let lastImportedPg = null;
   for (let i = 0; i < files.length; i++) {
     const f = files[i];
     setProgress(i / files.length, (isQuickMode ? "⚡ Quick Processing " : "File ") + (i + 1) + " / " + files.length + " · " + f.name);
     await frame();
     try {
       if (isPdfFile(f)) pageC += await importPdfFile(f, null, isQuickMode);
-      else if (isImageFile(f)) { await importImageFile(f); pageC++; }
+      else if (isImageFile(f)) {
+        const pg = await importImageFile(f);
+        lastImportedPg = pg;
+        pageC++;
+      }
       else { failC++; toast("Unsupported file type: " + f.name, "error"); continue; }
       okC++;
     } catch (e) { failC++; loadError(e, f.name); }
   }
   hideProgress(); renderGrid(); updateStats(); switchView();
   if (okC) toast((isQuickMode ? "⚡ Quick imported " : "Imported ") + pageC + " page" + (pageC !== 1 ? "s" : "") + " from " + okC + " file" + (okC !== 1 ? "s" : "") + (failC ? " · " + failC + " failed" : ""), "ok");
+  if (lastImportedPg && (files.length === 1 || state.pages.length === 1)) {
+    openEditor(lastImportedPg.id);
+  }
 }
 
 $("#importInput").addEventListener("change", e => { importFiles(e.target.files); e.target.value = ""; });
@@ -1006,9 +1014,11 @@ $("#apImageInput").addEventListener("change",async e=>{
   try{
     pushHistory();
     let at=pendingAddAt < 0?state.pages.length:pendingAddAt;
-    for(const f of fl){await importImageFile(f,at);at++;}
+    let lastPg=null;
+    for(const f of fl){lastPg=await importImageFile(f,at);at++;}
     hideProgress(); renderGrid(); updateStats(); buildStrip(); switchView();
     toast(fl.length+" image page(s) added","ok");
+    if(fl.length===1 && lastPg) openEditor(lastPg.id);
   }catch(err){hideProgress();loadError(err,err.message||"image");}
 });
 $("#apPdfInput").addEventListener("change",async e=>{
@@ -1033,6 +1043,10 @@ function openEditor(id){
   $("#editorView").hidden=false; document.body.style.overflow="hidden";
   selTextId=null; adjDirty=false;
   buildStrip(); setTool("adjust"); loadEditorPage();
+  requestAnimationFrame(()=>{
+    layoutPageBox();
+    fitView();
+  });
 }
 function closeEditor(){
   state.editingId=null; editorBase=null;
@@ -1059,13 +1073,17 @@ async function repaintEditor(){
   const p=curPage(); if(!p)return;
   $("#stageLoad").hidden=false; await frame();
   try{
-    const maxE=clamp(Math.max(stageWrap.clientWidth,stageWrap.clientHeight)*1.15,800,1700);
+    const maxE=clamp(Math.max(stageWrap.clientWidth||800,stageWrap.clientHeight||800)*1.15,800,1700);
     editorBase=await renderBase(p,{maxEdge:maxE});
     editCanvas.width=editorBase.width; editCanvas.height=editorBase.height;
     redrawDisplay(); layoutPageBox(); fitView(); syncTexts();
     if(curTool==="crop")initCropBox();
   }catch(e){toast("Could not render this page: "+e.message,"error");}
   $("#stageLoad").hidden=true;
+  requestAnimationFrame(()=>{
+    layoutPageBox();
+    fitView();
+  });
 }
 function redrawDisplay(){
   const p=curPage(); if(!p||!editorBase)return;
@@ -1083,21 +1101,40 @@ function liveFx(markThumb){
 }
 function layoutPageBox(){
   const W=editCanvas.width,H=editCanvas.height; if(!W||!H)return;
-  const availW=stageWrap.clientWidth-28,availH=stageWrap.clientHeight-28;
-  let bw=Math.min(availW,availH*(W/H),1100),bh=bw*(H/W);
-  if(bh>availH){bh=availH;bw=bh*(W/H);}
-  pageBox.style.width=Math.max(60,bw)+"px"; pageBox.style.height=Math.max(60,bh)+"px";
+  const sw=stageWrap.clientWidth,sh=stageWrap.clientHeight;
+  if(sw<=0||sh<=0)return;
+  const padX = sw < 600 ? 14 : 28;
+  const padY = sh < 600 ? 14 : 28;
+  const availW = Math.max(20, sw - padX);
+  const availH = Math.max(20, sh - padY);
+  let bw = Math.min(availW, availH * (W / H));
+  if (bw > 1400) bw = 1400;
+  let bh = bw * (H / W);
+  if (bh > availH) {
+    bh = availH;
+    bw = bh * (W / H);
+  }
+  if (bw > availW) {
+    bw = availW;
+    bh = bw * (H / W);
+  }
+  pageBox.style.width = Math.round(bw) + "px";
+  pageBox.style.height = Math.round(bh) + "px";
 }
 function fitView(){
   view.scale=1;
-  view.x=(stageWrap.clientWidth-pageBox.offsetWidth)/2;
-  view.y=(stageWrap.clientHeight-pageBox.offsetHeight)/2;
+  const pbW = pageBox.offsetWidth || parseFloat(pageBox.style.width) || 0;
+  const pbH = pageBox.offsetHeight || parseFloat(pageBox.style.height) || 0;
+  view.x = Math.round((stageWrap.clientWidth - pbW) / 2);
+  view.y = Math.round((stageWrap.clientHeight - pbH) / 2);
   applyView();
 }
 function applyView(){
   if(view.scale <= 1.05){
-    view.x=(stageWrap.clientWidth-pageBox.offsetWidth)/2;
-    view.y=(stageWrap.clientHeight-pageBox.offsetHeight)/2;
+    const pbW = pageBox.offsetWidth || parseFloat(pageBox.style.width) || 0;
+    const pbH = pageBox.offsetHeight || parseFloat(pageBox.style.height) || 0;
+    view.x = Math.round((stageWrap.clientWidth - pbW) / 2);
+    view.y = Math.round((stageWrap.clientHeight - pbH) / 2);
   }
   stage.style.transform="translate("+view.x+"px,"+view.y+"px) scale("+view.scale+")";
   $("#zoomLbl").textContent=Math.round(view.scale*100)+"%";
@@ -1190,14 +1227,40 @@ stageWrap.addEventListener("pointercancel",endPt);
 function setTool(tool){
   curTool=tool;
   $$("#edTools .tool-btn").forEach(b=>b.classList.toggle("on",b.dataset.tool===tool));
+  $$("#edMenuDropdown .ed-menu-item").forEach(b=>b.classList.toggle("on",b.dataset.tool===tool));
   $$("#edPanel section").forEach(s=>s.classList.toggle("on",s.dataset.panel===tool));
   cropLayer.hidden=tool!=="crop";
   const el=$("#eraseLayer"); if(el)el.hidden=tool!=="erase";
-  if(tool==="crop")initCropBox();
-  if(tool==="filters")buildFilterGrid();
-  if(tool==="text")renderTextList();
+  requestAnimationFrame(()=>{
+    layoutPageBox();
+    fitView();
+    if(tool==="crop")initCropBox();
+    if(tool==="filters")buildFilterGrid();
+    if(tool==="text")renderTextList();
+  });
 }
 $$("#edTools .tool-btn").forEach(b=>b.onclick=()=>setTool(b.dataset.tool));
+
+const threeDotBtn = $("#edThreeDotBtn");
+const menuDropdown = $("#edMenuDropdown");
+if (threeDotBtn && menuDropdown) {
+  threeDotBtn.onclick = (e) => {
+    e.stopPropagation();
+    menuDropdown.hidden = !menuDropdown.hidden;
+  };
+  document.addEventListener("click", (e) => {
+    if (!menuDropdown.hidden && !e.target.closest("#edMenuWrap")) {
+      menuDropdown.hidden = true;
+    }
+  });
+  $$("#edMenuDropdown .ed-menu-item").forEach(item => {
+    item.onclick = (e) => {
+      e.stopPropagation();
+      setTool(item.dataset.tool);
+      menuDropdown.hidden = true;
+    };
+  });
+}
 
 /* ---- adjust ---- */
 const ADJ_CONFIG = {
@@ -1256,17 +1319,77 @@ function buildAdjustUI() {
       }).join('') +
     `</div>` +
     `<div class="vol-controller">
+      <div class="vol-slider-header">
+        <span class="vol-active-title" id="volActiveTitle">Brightness</span>
+        <span class="vol-active-val" id="volActiveVal">0</span>
+      </div>
       <div class="vol-slider-fallback">
         <input type="range" id="volRangeFallback" />
       </div>
     </div>`;
 
-  $$('#adjRows .adj-opt-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      activeAdj = btn.dataset.mode;
-      syncSlidersFromPage();
+  const grid = container.querySelector('.adj-options-grid');
+  if (grid) {
+    let isDown = false;
+    let startX = 0;
+    let scrollLeft = 0;
+    let isDragging = false;
+    let dragDist = 0;
+
+    grid.addEventListener('mousedown', (e) => {
+      isDown = true;
+      isDragging = false;
+      dragDist = 0;
+      startX = e.pageX - grid.offsetLeft;
+      scrollLeft = grid.scrollLeft;
     });
-  });
+
+    window.addEventListener('mouseup', () => {
+      if (isDown) {
+        isDown = false;
+        setTimeout(() => { isDragging = false; dragDist = 0; }, 60);
+      }
+    });
+
+    grid.addEventListener('mousemove', (e) => {
+      if (!isDown) return;
+      const x = e.pageX - grid.offsetLeft;
+      const walk = (x - startX);
+      dragDist = Math.abs(walk);
+      if (dragDist > 5) {
+        isDragging = true;
+        e.preventDefault();
+      }
+      grid.scrollLeft = scrollLeft - walk;
+    });
+
+    let touchStartX = 0;
+    let touchMoved = false;
+    grid.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 1) {
+        touchStartX = e.touches[0].clientX;
+        touchMoved = false;
+      }
+    }, { passive: true });
+    grid.addEventListener('touchmove', (e) => {
+      if (e.touches.length === 1 && Math.abs(e.touches[0].clientX - touchStartX) > 6) {
+        touchMoved = true;
+      }
+    }, { passive: true });
+
+    grid.querySelectorAll('.adj-opt-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        if (isDragging || dragDist > 5 || touchMoved) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+        activeAdj = btn.dataset.mode;
+        syncSlidersFromPage();
+        btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      });
+    });
+  }
 
   const rangeFB = $('#volRangeFallback');
   rangeFB.addEventListener('input', () => {
@@ -1307,6 +1430,13 @@ function syncSlidersFromPage() {
     rangeFB.max = curCfg.max;
     rangeFB.value = curVal;
   }
+  const titleEl = $('#volActiveTitle');
+  if (titleEl) titleEl.textContent = curCfg.name;
+  const valEl = $('#volActiveVal');
+  if (valEl) {
+    const sign = (curVal > 0 && curCfg.min < 0) ? '+' : '';
+    valEl.textContent = sign + curVal + (curCfg.unit || '');
+  }
 }
 
 buildAdjustUI();
@@ -1330,9 +1460,53 @@ function compareEnd(){
   textsLayer.style.display=""; redrawDisplay();
 }
 const cmpBtn=$("#adjCompare");
-cmpBtn.addEventListener("pointerdown",compareStart);
-cmpBtn.addEventListener("pointerup",compareEnd);
-cmpBtn.addEventListener("pointerleave",compareEnd);
+if(cmpBtn){
+  cmpBtn.addEventListener("pointerdown",compareStart);
+  cmpBtn.addEventListener("pointerup",compareEnd);
+  cmpBtn.addEventListener("pointerleave",compareEnd);
+}
+
+const topReset = $("#topAdjReset");
+if (topReset) {
+  topReset.onclick = () => {
+    if (curTool === "adjust") {
+      $("#adjReset").click();
+    } else if (curTool === "crop") {
+      const b = $("#cropReset"); if (b) b.click();
+    } else if (curTool === "erase") {
+      const b = $("#eraseUndo"); if (b) b.click();
+    }
+  };
+}
+
+const topApply = $("#topAdjApply");
+if (topApply) {
+  topApply.onclick = () => {
+    if (curTool === "adjust") {
+      $("#adjApply").click();
+    } else if (curTool === "crop") {
+      const b = $("#cropApply"); if (b) b.click();
+    } else if (curTool === "erase") {
+      const b = $("#eraseApply"); if (b) b.click();
+    }
+  };
+}
+
+const topCmp = $("#topAdjCompare");
+if (topCmp) {
+  const startCmp = (e) => {
+    topCmp.classList.add("active");
+    compareStart();
+  };
+  const endCmp = (e) => {
+    topCmp.classList.remove("active");
+    compareEnd();
+  };
+  topCmp.addEventListener("pointerdown", startCmp);
+  topCmp.addEventListener("pointerup", endCmp);
+  topCmp.addEventListener("pointerleave", endCmp);
+  topCmp.addEventListener("pointercancel", endCmp);
+}
 
 /* ---- crop ---- */
 let cropBoxPx=null,cropRatio=null,cropDrag=null;
@@ -1882,8 +2056,18 @@ let rzT=null;
 addEventListener("resize",()=>{
   if($("#editorView").hidden)return;
   clearTimeout(rzT);
-  rzT=setTimeout(()=>{layoutPageBox();fitView();syncTexts();if(curTool==="crop")initCropBox();},200);
+  rzT=setTimeout(()=>{layoutPageBox();fitView();syncTexts();if(curTool==="crop")initCropBox();},120);
 });
+if(window.ResizeObserver){
+  const stageRO=new ResizeObserver(()=>{
+    if($("#editorView").hidden||!curPage()||!editorBase)return;
+    layoutPageBox();
+    fitView();
+    syncTexts();
+    if(typeof curTool!=="undefined"&&curTool==="crop"&&typeof initCropBox==="function")initCropBox();
+  });
+  stageRO.observe(stageWrap);
+}
 
 /* ============ preview ============ */
 let pvIdx=0,pvToken=0;
