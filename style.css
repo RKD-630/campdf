@@ -243,8 +243,9 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .strip-item:hover{border-color:var(--line2);transform:translateY(-1px)}
 .strip-item.on{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 .strip-item.on b{color:var(--accent)}
-#stageWrap{position:relative;overflow:hidden;touch-action:none;min-width:0;min-height:0;
+#stageWrap{position:relative;overflow:hidden;touch-action:none;min-width:0;min-height:0;cursor:grab;user-select:none;-webkit-user-select:none;
   background-image:radial-gradient(color-mix(in srgb,var(--ink) 8%, transparent) 1px, transparent 1.3px);background-size:18px 18px}
+#stageWrap:active{cursor:grabbing}
 #stage{position:absolute;top:0;left:0;transform-origin:0 0;will-change:transform}
 #pageBox{position:relative;background:#fff;box-shadow:var(--shadow-lg);border-radius:3px;overflow:hidden}
 #editCanvas{display:block;width:100%;height:100%}
