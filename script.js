@@ -1657,6 +1657,7 @@ function initCropBox(){
     :{x:0,y:0,w:W,h:H};
   cropRatio=null;
   $$("#ratioChips .chip").forEach(x=>x.classList.toggle("on",x.dataset.ratio===(isFull?"full":"free")));
+  const rc = $("#ratioChips"); if (rc) makeGridDraggable(rc);
   positionCropDom();
 }
 function positionCropDom(){
@@ -2017,7 +2018,7 @@ function makeGridDraggable(grid) {
     }
   }, { passive: true });
 
-  grid.querySelectorAll('.adj-opt-btn').forEach(btn => {
+  grid.querySelectorAll('.adj-opt-btn, .chip').forEach(btn => {
     btn.addEventListener('click', (e) => {
       if (isDragging || dragDist > 5 || touchMoved) {
         e.preventDefault();
@@ -2028,7 +2029,7 @@ function makeGridDraggable(grid) {
 }
 
 function updateUnifiedTextController() {
-  $$(".adj-options-grid").forEach(makeGridDraggable);
+  $$(".adj-options-grid, .ratio-chips").forEach(makeGridDraggable);
 
   const t = selText();
   const cfg = T_MODES[activeTMode] || T_MODES.opacity;
