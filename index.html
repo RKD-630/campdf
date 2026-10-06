@@ -70,6 +70,7 @@
     <button class="ib" id="btnTheme" title="Toggle light / dark"><svg><use href="#i-moon"/></svg></button>
   </div>
   <nav class="tb-actions">
+    <button class="btn primary" id="btnImport" title="Import PDF and image files"><svg><use href="#i-import"/></svg><span class="lbl">Import Files</span></button>
     <button class="btn amber" id="btnQuickImport" title="Lightning fast import for heavy PDF files"><svg><use href="#i-zap"/></svg><span class="lbl">⚡ Quick Import</span></button>
     <button class="btn" id="btnAddPage" disabled=""><svg><use href="#i-addpage"/></svg><span class="lbl">Add Page</span></button>
     <button class="btn" id="btnEdit" disabled=""><svg><use href="#i-edit"/></svg><span class="lbl">Edit</span></button>
@@ -483,7 +484,7 @@
 
 <div id="toasts" role="status" aria-live="polite"></div>
 
-<input type="file" id="importInput" multiple="" hidden="" accept=".pdf,application/pdf,image/*,.svg,.bmp,.tif,.tiff" />
+<input type="file" id="importInput" multiple="" hidden="" accept="application/pdf,image/*,.pdf,.jpg,.jpeg,.png,.webp,.gif,.bmp,.tif,.tiff,.svg" />
 <input type="file" id="quickImportInput" multiple="" hidden="" accept=".pdf,application/pdf" />
 <input type="file" id="replaceInput" hidden="" accept=".pdf,application/pdf,image/*" />
 <input type="file" id="apImageInput" hidden="" multiple="" accept="image/*" />
