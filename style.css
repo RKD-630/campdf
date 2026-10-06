@@ -129,6 +129,10 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
   .top-corner-actions .ib{width:36px;height:36px}
   .tb-actions{margin-left:0;width:100%}
   .tb-actions .lbl{display:none}
+  #btnDup{display:none!important}
+}
+@media(max-width:768px){
+  #btnDup{display:none!important}
 }
 
 /* ================= HERO ================= */
@@ -250,7 +254,7 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 #pageBox{position:relative;background:#fff;box-shadow:var(--shadow-lg);border-radius:3px;overflow:hidden}
 #editCanvas{display:block;width:100%;height:100%}
 #textsLayer{position:absolute;inset:0}
-.txt{position:absolute;white-space:pre-wrap;word-break:break-word;line-height:1.3;padding:.25em .35em;cursor:grab;
+.txt{position:absolute;white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;word-wrap:break-word;line-height:1.3;padding:.25em .35em;cursor:grab;
   transform-origin:50% 50%;user-select:none;box-sizing:border-box;min-width:1em}
 .txt.sel{outline:2px dashed var(--accent);outline-offset:2px}
 .txt.editing{cursor:text;user-select:text;outline:2px solid var(--accent)}
@@ -318,7 +322,9 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .tool-btn.on{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 6px 14px -6px color-mix(in srgb,var(--accent) 70%, transparent)}
 #edPageInfo{margin-left:auto;font-size:.68rem;color:var(--muted);letter-spacing:.06em;white-space:nowrap;padding-left:12px}
 /* Top Actions & 3-Dot Menu in Editor */
-.ed-top-actions{display:none;align-items:center;gap:6px;margin-left:auto}
+.ed-top-actions{display:flex;align-items:center;gap:6px;margin-left:auto}
+#topSave{width:auto;min-width:36px;height:36px;padding:0 12px;gap:6px;font-size:.82rem;font-weight:700}
+#topSave svg{width:16px;height:16px;flex:none}
 .top-act-btn{display:inline-flex;align-items:center;justify-content:center;transition:all .15s ease;width:36px;height:36px;border-radius:9px;background:var(--surface);border:1px solid var(--line2);cursor:pointer;color:var(--ink)}
 .top-act-btn.primary{background:#5027F5;color:#ffffff;border-color:#5027F5}
 .top-act-btn.primary svg{color:#ffffff}
@@ -332,6 +338,13 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 [data-theme="dark"] .top-act-btn.primary{background:#ffffff;border-color:#ffffff;color:#000000}
 [data-theme="dark"] .top-act-btn.primary svg{color:#000000}
 
+/* Move text D-pad controls */
+.move-dpad{display:flex;flex-direction:column;align-items:center;gap:6px;width:100%;margin:6px 0}
+.move-dpad .move-h-row{display:flex;align-items:center;justify-content:center;gap:6px;width:100%}
+.move-dpad .move-btn{min-height:36px;padding:6px 12px;font-size:.82rem;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:6px;flex:1;max-width:130px;border-radius:8px;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+.move-dpad .move-btn svg{width:15px;height:15px;flex:none}
+.move-dpad #tMoveUp, .move-dpad #mMoveUp, .move-dpad #tMoveDown, .move-dpad #mMoveDown{max-width:150px;width:100%}
+
 .ed-menu-wrap{position:relative}
 #edThreeDotBtn{width:36px;height:36px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;background:var(--surface);border:1px solid var(--line2);cursor:pointer;color:var(--ink)}
 #edThreeDotBtn svg{width:18px;height:18px}
@@ -344,10 +357,15 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .ed-menu-item.on{background:var(--accent-soft);color:var(--accent)}
 .ed-menu-item.on svg{color:var(--accent)}
 
+@media(min-width:901px){
+  .ed-menu-wrap{display:none}
+}
 @media(max-width:900px){
   #edTop{padding:8px 10px;gap:8px}
   #edBack .lbl-back{display:none}
   #edBack{padding:0 8px;min-width:38px;height:38px}
+  #topSave{width:36px;padding:0;justify-content:center}
+  #topSave .lbl-save{display:none}
   .ed-title strong{font-size:.88rem;max-width:110px}
   .ed-title span{display:none}
   .ed-zoom{display:none!important}
@@ -474,56 +492,52 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .vol-slider-fallback{width:100%;display:flex;flex-direction:column;gap:4px}
 .vol-slider-fallback input[type=range]{width:100%;height:28px}
 
+.adj-options-grid{
+  display:flex;
+  flex-direction:row;
+  flex-wrap:nowrap;
+  overflow-x:auto;
+  overflow-y:hidden;
+  gap:8px;
+  margin-bottom:8px;
+  padding:4px 2px 6px;
+  scrollbar-width:none;
+  -webkit-overflow-scrolling:touch;
+  touch-action:pan-x pan-y;
+  cursor:grab;
+  user-select:none;
+  -webkit-user-select:none;
+}
+.adj-options-grid:active{
+  cursor:grabbing;
+}
+.adj-options-grid::-webkit-scrollbar{
+  display:none;
+}
+
 @media (max-width:900px){
-  .adj-options-grid{
-    display:flex;
-    flex-direction:row;
-    flex-wrap:nowrap;
-    overflow-x:auto;
-    overflow-y:hidden;
-    gap:8px;
-    margin-bottom:8px;
-    padding:4px 2px 6px;
-    scrollbar-width:none;
-    -webkit-overflow-scrolling:touch;
-    touch-action:pan-x pan-y;
-    cursor:grab;
-    user-select:none;
-    -webkit-user-select:none;
-  }
-  .adj-options-grid:active{
-    cursor:grabbing;
-  }
-  .adj-options-grid::-webkit-scrollbar{
-    display:none;
-  }
   .adj-opt-btn{
     flex:0 0 auto;
     display:inline-flex;
     flex-direction:row;
     align-items:center;
     justify-content:center;
-    gap:7px;
-    min-height:38px;
+    width:38px;
     height:38px;
-    padding:6px 14px;
-    border-radius:20px;
-    white-space:nowrap;
+    min-width:38px;
+    padding:0;
+    border-radius:11px;
     user-select:none;
     -webkit-user-select:none;
     box-shadow:0 1px 4px rgba(0,0,0,.06);
   }
   .adj-opt-btn svg{
-    width:17px;
-    height:17px;
+    width:18px;
+    height:18px;
     flex:none;
   }
   .adj-opt-label{
-    display:inline-block!important;
-    font-size:.82rem;
-    font-weight:600;
-    line-height:1;
-    white-space:nowrap;
+    display:none!important;
   }
   .vol-controller{
     padding:8px 12px;

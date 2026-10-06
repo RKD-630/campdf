@@ -52,6 +52,9 @@
 <symbol id="i-zip" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8"/><rect x="1" y="3" width="22" height="5" rx="1"/><path d="M10 12h4"/></g></symbol>
 <symbol id="i-zap" viewBox="0 0 24 24"><polygon fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></symbol>
 <symbol id="i-dots" viewBox="0 0 24 24"><g fill="currentColor"><circle cx="12" cy="5" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="12" cy="19" r="2.2"/></g></symbol>
+<symbol id="i-move" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m5 9-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M12 2v20"/></g></symbol>
+<symbol id="i-up" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m6 14 6-6 6 6"/></symbol>
+<symbol id="i-down" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m6 10 6 6 6-6"/></symbol>
 </defs></svg>
 
 <div id="libWarn" hidden="">⚠ Core libraries failed to load (PDF.js / PDF-Lib). Check your internet connection and reload.</div>
@@ -138,6 +141,7 @@
     <button class="btn ghost" id="edBack"><svg><use href="#i-left"/></svg> <span class="lbl-back">Back</span></button>
     <div class="ed-title"><strong id="edPageName">Page 01</strong><span id="edPageMeta" class="mono"></span></div>
     <div class="ed-top-actions" id="edTopActions">
+      <button class="top-act-btn primary" id="topSave" title="Save page edits" aria-label="Save"><svg><use href="#i-save"/></svg><span class="lbl-save">Save</span></button>
       <button class="ib sm top-act-btn" id="topAdjReset" title="Reset adjustments" aria-label="Reset"><svg><use href="#i-reset"/></svg></button>
       <button class="ib sm top-act-btn teal" id="topAdjCompare" title="Hold to compare before/after" aria-label="Hold Before"><svg><use href="#i-eye"/></svg></button>
       <button class="ib sm top-act-btn primary" id="topAdjApply" title="Apply adjustments" aria-label="Apply"><svg><use href="#i-check"/></svg></button>
@@ -150,6 +154,7 @@
           <button class="ed-menu-item" data-tool="erase"><svg><use href="#i-eraser"/></svg><span>Erase</span></button>
           <button class="ed-menu-item" data-tool="filters"><svg><use href="#i-spark"/></svg><span>Filters</span></button>
           <button class="ed-menu-item" data-tool="text"><svg><use href="#i-type"/></svg><span>Text</span></button>
+          <button class="ed-menu-item" data-tool="move"><svg><use href="#i-move"/></svg><span>Move</span></button>
           <button class="ed-menu-item" data-tool="arrange"><svg><use href="#i-arrange"/></svg><span>Page</span></button>
         </div>
       </div>
@@ -264,11 +269,97 @@
             <button class="ib sm" data-talign="left" style="font-weight:800">⇤</button>
             <button class="ib sm" data-talign="center" style="font-weight:800">≡</button>
             <button class="ib sm" data-talign="right" style="font-weight:800">⇥</button></div>
-          <div class="adj-row"><div class="adj-lab"><span>Opacity</span><b class="mono" id="vTOp">100%</b></div>
-            <input type="range" id="tOpacity" min="0.05" max="1" step="0.01" /></div>
-          <div class="adj-row"><div class="adj-lab"><span>Rotation</span><b class="mono" id="vTRot">0°</b></div>
-            <input type="range" id="tRot" min="-180" max="180" step="1" /></div>
-          <button class="btn danger" id="tDelete" style="width:100%;margin-top:6px"><svg><use href="#i-trash"/></svg> Delete text</button>
+          <div class="field" style="margin-top:12px">
+            <label style="margin-bottom:6px;display:block">Text Adjustments</label>
+            <div class="adj-options-grid" id="tCtrlGrid">
+              <button class="adj-opt-btn on" data-tmode="opacity" title="Opacity">
+                <span class="adj-opt-dot"></span>
+                <svg><use href="#i-opacity"/></svg>
+                <span class="adj-opt-label">Opacity</span>
+              </button>
+              <button class="adj-opt-btn" data-tmode="rotation" title="Rotation">
+                <span class="adj-opt-dot"></span>
+                <svg><use href="#i-rotcw"/></svg>
+                <span class="adj-opt-label">Rotation</span>
+              </button>
+              <button class="adj-opt-btn" data-tmode="moveX" title="Move Left-Right">
+                <span class="adj-opt-dot"></span>
+                <svg><use href="#i-swap"/></svg>
+                <span class="adj-opt-label">Move L/R</span>
+              </button>
+              <button class="adj-opt-btn" data-tmode="moveY" title="Move Up-Down">
+                <span class="adj-opt-dot"></span>
+                <svg><use href="#i-move"/></svg>
+                <span class="adj-opt-label">Move U/D</span>
+              </button>
+              <button class="adj-opt-btn" data-tmode="size" title="Font Size">
+                <span class="adj-opt-dot"></span>
+                <svg><use href="#i-type"/></svg>
+                <span class="adj-opt-label">Size</span>
+              </button>
+            </div>
+            
+            <div class="vol-controller" id="tUnifiedController" style="margin-top:8px">
+              <div class="vol-slider-header">
+                <span class="vol-active-title" id="tCtrlTitle">Opacity</span>
+                <span class="vol-active-val" id="tCtrlVal">100%</span>
+              </div>
+              <div class="vol-slider-fallback">
+                <input type="range" id="tCtrlRange" min="0.05" max="1" step="0.01" value="1" />
+              </div>
+              <div class="t-ctrl-nudge-row" style="display:flex;gap:6px;margin-top:8px">
+                <button class="btn sm" id="tCtrlDec" style="flex:1;min-height:34px" title="Decrease value">- Step</button>
+                <button class="btn sm ghost" id="tCtrlReset" style="flex:1;min-height:34px" title="Reset value">Reset</button>
+                <button class="btn sm" id="tCtrlInc" style="flex:1;min-height:34px" title="Increase value">+ Step</button>
+              </div>
+            </div>
+          </div>
+
+          <button class="btn danger" id="tDelete" style="width:100%;margin-top:12px"><svg><use href="#i-trash"/></svg> Delete text</button>
+        </div>
+      </section>
+      <section data-panel="move">
+        <h3><svg><use href="#i-move"/></svg> Move &amp; Adjust Text</h3>
+        <p class="sub" style="font-size:0.8rem;color:var(--muted);margin-bottom:12px">Select text and use the unified controller to adjust position, size, opacity or rotation.</p>
+        <div id="moveWrap">
+          <div class="field">
+            <label>Select text</label>
+            <select id="moveTextSelect" style="width:100%;margin-bottom:10px"></select>
+          </div>
+          <div class="field" style="margin-top:8px">
+            <label style="margin-bottom:6px;display:block">Control Selector</label>
+            <div class="adj-options-grid" id="mCtrlGrid">
+              <button class="adj-opt-btn" data-tmode="moveX" title="Move Left-Right">
+                <span class="adj-opt-dot"></span>
+                <svg><use href="#i-swap"/></svg>
+                <span class="adj-opt-label">Move L/R</span>
+              </button>
+              <button class="adj-opt-btn" data-tmode="moveY" title="Move Up-Down">
+                <span class="adj-opt-dot"></span>
+                <svg><use href="#i-move"/></svg>
+                <span class="adj-opt-label">Move U/D</span>
+              </button>
+              <button class="adj-opt-btn" data-tmode="size" title="Font Size">
+                <span class="adj-opt-dot"></span>
+                <svg><use href="#i-type"/></svg>
+                <span class="adj-opt-label">Size</span>
+              </button>
+              <button class="adj-opt-btn" data-tmode="opacity" title="Opacity">
+                <span class="adj-opt-dot"></span>
+                <svg><use href="#i-opacity"/></svg>
+                <span class="adj-opt-label">Opacity</span>
+              </button>
+              <button class="adj-opt-btn" data-tmode="rotation" title="Rotation">
+                <span class="adj-opt-dot"></span>
+                <svg><use href="#i-rotcw"/></svg>
+                <span class="adj-opt-label">Rotation</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div id="moveNoText" hidden="" style="margin-top:14px">
+          <p class="p-hint">No text added to this page yet.</p>
+          <button class="btn primary sm" id="moveAddTextBtn" style="width:100%;margin-top:8px"><svg><use href="#i-plus"/></svg> Add Text</button>
         </div>
       </section>
       <section data-panel="arrange">
@@ -289,6 +380,7 @@
     <button class="tool-btn" data-tool="erase"><svg><use href="#i-eraser"/></svg> Erase</button>
     <button class="tool-btn" data-tool="filters"><svg><use href="#i-spark"/></svg> Filters</button>
     <button class="tool-btn" data-tool="text"><svg><use href="#i-type"/></svg> Text</button>
+    <button class="tool-btn" data-tool="move"><svg><use href="#i-move"/></svg> Move</button>
     <button class="tool-btn" data-tool="arrange"><svg><use href="#i-arrange"/></svg> Page</button>
     <span id="edPageInfo" class="mono"></span>
   </footer>
