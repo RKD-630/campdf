@@ -3067,17 +3067,48 @@ $("#iscCamera").onclick = () => {
   /* --- Capture --- */
   function doCapture() {
     const vw = camVideo.videoWidth||640, vh = camVideo.videoHeight||480;
-    capturedCanvas = document.createElement("canvas");
-    capturedCanvas.width = vw; capturedCanvas.height = vh;
-    capturedCanvas.getContext("2d").drawImage(camVideo,0,0,vw,vh);
-    let q = autoDetectPoly;
-    if(q){
-      const sx=vw/camOverlay.width, sy=vh/camOverlay.height;
-      q={tl:{x:q.tl.x*sx,y:q.tl.y*sy},tr:{x:q.tr.x*sx,y:q.tr.y*sy},
-         bl:{x:q.bl.x*sx,y:q.bl.y*sy},br:{x:q.br.x*sx,y:q.br.y*sy}};
+
+    // Capture full-resolution frame
+    const fullCanvas = document.createElement("canvas");
+    fullCanvas.width = vw; fullCanvas.height = vh;
+    fullCanvas.getContext("2d").drawImage(camVideo, 0, 0, vw, vh);
+
+    // Scale detected overlay quad to full capture resolution
+    let detectedQuad = null;
+    if(autoDetectPoly){
+      const sx = vw / camOverlay.width, sy = vh / camOverlay.height;
+      const q = autoDetectPoly;
+      detectedQuad = {
+        tl:{x:q.tl.x*sx, y:q.tl.y*sy}, tr:{x:q.tr.x*sx, y:q.tr.y*sy},
+        bl:{x:q.bl.x*sx, y:q.bl.y*sy}, br:{x:q.br.x*sx, y:q.br.y*sy}
+      };
     }
+
+    // AUTO-CROP: If a document was detected, immediately crop that region
+    // from the full frame and use the cropped canvas as capturedCanvas.
+    // The review step then shows the already-cropped image with full handles.
+    if(detectedQuad){
+      const xs = [detectedQuad.tl.x, detectedQuad.tr.x, detectedQuad.bl.x, detectedQuad.br.x];
+      const ys = [detectedQuad.tl.y, detectedQuad.tr.y, detectedQuad.bl.y, detectedQuad.br.y];
+      const cx0 = Math.max(0, Math.round(Math.min(...xs)));
+      const cy0 = Math.max(0, Math.round(Math.min(...ys)));
+      const cx1 = Math.min(vw, Math.round(Math.max(...xs)));
+      const cy1 = Math.min(vh, Math.round(Math.max(...ys)));
+      const cw  = Math.max(1, cx1 - cx0);
+      const ch  = Math.max(1, cy1 - cy0);
+
+      // Build cropped canvas
+      capturedCanvas = document.createElement("canvas");
+      capturedCanvas.width = cw; capturedCanvas.height = ch;
+      capturedCanvas.getContext("2d").drawImage(fullCanvas, cx0, cy0, cw, ch, 0, 0, cw, ch);
+    } else {
+      // No detection — keep full frame
+      capturedCanvas = fullCanvas;
+    }
+
     stopStream();
-    showReviewStep(q);
+    // Pass null so review step uses full-image default quad (entire cropped canvas)
+    showReviewStep(null);
   }
 
   /* --- Review step --- */
@@ -3099,19 +3130,15 @@ $("#iscCamera").onclick = () => {
       camMaskCanvas.width=dw; camMaskCanvas.height=dh;
       drawCapturedOnCanvas();
 
-      const sx=dw/capturedCanvas.width, sy=dh/capturedCanvas.height;
-      if(detectedQuad){
-        quad={
-          tl:{x:detectedQuad.tl.x*sx,y:detectedQuad.tl.y*sy},
-          tr:{x:detectedQuad.tr.x*sx,y:detectedQuad.tr.y*sy},
-          bl:{x:detectedQuad.bl.x*sx,y:detectedQuad.bl.y*sy},
-          br:{x:detectedQuad.br.x*sx,y:detectedQuad.br.y*sy}
-        };
-      } else {
-        const p=0.05;
-        quad={tl:{x:dw*p,y:dh*p},tr:{x:dw*(1-p),y:dh*p},bl:{x:dw*p,y:dh*(1-p)},br:{x:dw*(1-p),y:dh*(1-p)}};
-      }
+      // Full-image quad with a tiny inset so handles are visible at edges
+      const p=0.008;
+      quad={tl:{x:dw*p,y:dh*p},tr:{x:dw*(1-p),y:dh*p},bl:{x:dw*p,y:dh*(1-p)},br:{x:dw*(1-p),y:dh*(1-p)}};
       positionHandles(); drawMask();
+
+      // Show a toast so user knows auto-crop was applied
+      if(autoDetectPoly){
+        toast("Document auto-cropped ✓ — adjust corners if needed", "ok", 2400);
+      }
     });
   }
 
@@ -3195,26 +3222,35 @@ $("#iscCamera").onclick = () => {
 
   new ResizeObserver(() => { if(!camStep2.hidden) positionHandles(); }).observe(camReviewStage);
 
-  /* --- Auto-detect button --- */
+  /* --- Auto-detect button (in review step) ---
+   * Runs edge detection on the current capturedCanvas (already auto-cropped
+   * at capture time). If inner edges are found it tightens the crop handles;
+   * otherwise it snaps handles back to the full image. */
   $("#camAutoDetect").onclick = () => {
-    const dw=320, dh=Math.round(capturedCanvas.height*320/capturedCanvas.width);
-    const off=document.createElement("canvas");
-    off.width=dw; off.height=dh;
-    const octx=off.getContext("2d");
-    octx.drawImage(capturedCanvas,0,0,dw,dh);
-    const detected=detectDocumentQuad(octx,dw,dh);
+    if(!capturedCanvas) return;
+    const dw = 320, dh = Math.round(capturedCanvas.height * 320 / capturedCanvas.width);
+    const off = document.createElement("canvas");
+    off.width = dw; off.height = dh;
+    const octx = off.getContext("2d");
+    octx.drawImage(capturedCanvas, 0, 0, dw, dh);
+    const detected = detectDocumentQuad(octx, dw, dh);
     if(detected){
-      const sx=displayW/dw, sy=displayH/dh;
-      quad={
-        tl:{x:detected.tl.x*sx,y:detected.tl.y*sy},
-        tr:{x:detected.tr.x*sx,y:detected.tr.y*sy},
-        bl:{x:detected.bl.x*sx,y:detected.bl.y*sy},
-        br:{x:detected.br.x*sx,y:detected.br.y*sy}
+      const sx = displayW/dw, sy = displayH/dh;
+      quad = {
+        tl:{x:detected.tl.x*sx, y:detected.tl.y*sy},
+        tr:{x:detected.tr.x*sx, y:detected.tr.y*sy},
+        bl:{x:detected.bl.x*sx, y:detected.bl.y*sy},
+        br:{x:detected.br.x*sx, y:detected.br.y*sy}
       };
       positionHandles(); drawMask();
-      toast("Document edges detected!", "ok", 1800);
+      toast("Edges re-detected and crop updated ✓", "ok", 1800);
     } else {
-      toast("Could not auto-detect. Adjust corners manually.", "info", 2400);
+      // Snap to full image
+      const p=0.008;
+      quad={tl:{x:displayW*p,y:displayH*p},tr:{x:displayW*(1-p),y:displayH*p},
+            bl:{x:displayW*p,y:displayH*(1-p)},br:{x:displayW*(1-p),y:displayH*(1-p)}};
+      positionHandles(); drawMask();
+      toast("No inner edges found — showing full image.", "info", 2400);
     }
   };
 
