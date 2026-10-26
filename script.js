@@ -432,6 +432,44 @@ async function importFiles(list, opts = {}) {
   }
 }
 
+function openNativeDeviceCamera() {
+  const inp = $("#deviceCameraInput");
+  if (inp) {
+    inp.value = "";
+    inp.click();
+  }
+}
+window.openNativeDeviceCamera = openNativeDeviceCamera;
+
+if ($("#deviceCameraInput")) {
+  $("#deviceCameraInput").addEventListener("change", async e => {
+    const files = [...(e.target.files || [])];
+    e.target.value = "";
+    if (!files.length) return;
+    if (typeof pendingAddAt !== "undefined" && pendingAddAt >= 0) {
+      showProgress("Adding captured page…");
+      try {
+        pushHistory();
+        let at = pendingAddAt;
+        let lastPg = null;
+        for (const f of files) {
+          lastPg = await importImageFile(f, at);
+          at++;
+        }
+        pendingAddAt = -1;
+        hideProgress(); renderGrid(); updateStats(); buildStrip(); switchView();
+        toast("Camera page added", "ok");
+        if (lastPg) openEditor(lastPg.id);
+      } catch(err) {
+        hideProgress();
+        loadError(err, files[0].name);
+      }
+    } else {
+      await importFiles(files);
+    }
+  });
+}
+
 $("#importInput").addEventListener("change", e => { importFiles(e.target.files); e.target.value = ""; });
 if ($("#quickImportInput")) $("#quickImportInput").addEventListener("change", e => { importFiles(e.target.files, { isQuickMode: true }); e.target.value = ""; });
 if ($("#btnImport")) $("#btnImport").onclick = openImportSourceModal;
@@ -1011,6 +1049,7 @@ $("#apConfirm").onclick=async()=>{
   if(apAnchor!=null&&posVal==="before")at=idxOf(apAnchor);
   $("#addPageModal").hidden=true;
   if(apKind==="image"){pendingAddAt=at;$("#apImageInput").value="";$("#apImageInput").click();return;}
+  if(apKind==="camera"){pendingAddAt=at;openCameraScanner();return;}
   if(apKind==="pdf"){pendingAddAt=at;$("#apPdfInput").value="";$("#apPdfInput").click();return;}
   let wPt,hPt; const sz=$("#apSize").value;
   if(sz==="custom"){
@@ -2928,30 +2967,65 @@ $("#iscCamera").onclick = () => {
 
   let detectionRafId = null;
 
-  function openCameraScanner() {
+  async function openCameraScanner() {
     camModal.hidden = false;
     camStep1.hidden = false;
     camStep2.hidden = true;
     adjBrightness = 0; adjContrast = 0; adjDarkness = 0;
     resetAdjSliders();
-    startCamera().then(() => startDetectionLoop());
+    const ok = await startCamera();
+    if (ok) startDetectionLoop();
   }
   window.openCameraScanner = openCameraScanner;
 
   async function startCamera() {
     stopStream();
-    try {
-      camStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: camFacingMode, width:{ideal:1920}, height:{ideal:1080} },
-        audio: false
-      });
+    let stream = null;
+
+    if (navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === "function") {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: { ideal: camFacingMode },
+            width: { ideal: 1920 },
+            height: { ideal: 1080 }
+          },
+          audio: false
+        });
+      } catch(err1) {
+        console.warn("Camera with facingMode failed, retrying generic video:", err1);
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: false
+          });
+        } catch(err2) {
+          console.warn("Generic getUserMedia failed:", err2);
+        }
+      }
+    }
+
+    if (stream) {
+      camStream = stream;
       camVideo.srcObject = camStream;
-      await new Promise(r => { camVideo.onloadedmetadata = r; });
-      camVideo.play();
+      camVideo.muted = true;
+      camVideo.playsInline = true;
+      try {
+        await new Promise(r => {
+          camVideo.onloadedmetadata = r;
+          setTimeout(r, 600);
+        });
+        await camVideo.play();
+      } catch(e) {
+        console.warn("camVideo play warning:", e);
+      }
       syncOverlay();
-    } catch(e) {
+      return true;
+    } else {
       closeCameraScanner();
-      toast("Camera not available: " + (e.message || e), "error");
+      toast("Live scanner unavailable. Opening device camera…", "info", 2000);
+      openNativeDeviceCamera();
+      return false;
     }
   }
 
@@ -3119,27 +3193,61 @@ $("#iscCamera").onclick = () => {
 
     // Wait a frame so stage has dimensions
     requestAnimationFrame(() => {
-      const sw = camReviewStage.clientWidth||400, sh = camReviewStage.clientHeight||300;
+      const stageW = camReviewStage.clientWidth || 360;
+      const stageH = camReviewStage.clientHeight || 480;
+      // Inset slightly (24px) so handles never get clipped at screen edges
+      const maxW = Math.max(80, stageW - 24);
+      const maxH = Math.max(80, stageH - 24);
+
       const ratio = capturedCanvas.width / capturedCanvas.height;
-      let dw,dh;
-      if(ratio > sw/sh){ dw=sw; dh=Math.round(sw/ratio); }
-      else { dh=sh; dw=Math.round(sh*ratio); }
-      dw=Math.max(1,dw); dh=Math.max(1,dh);
-      displayW=dw; displayH=dh;
-      camCropCanvas.width=dw; camCropCanvas.height=dh;
-      camMaskCanvas.width=dw; camMaskCanvas.height=dh;
+      let dw, dh;
+      if (ratio > maxW / maxH) {
+        dw = maxW;
+        dh = Math.round(maxW / ratio);
+      } else {
+        dh = maxH;
+        dw = Math.round(maxH * ratio);
+      }
+      dw = Math.max(1, dw);
+      dh = Math.max(1, dh);
+      displayW = dw;
+      displayH = dh;
+      camCropCanvas.width = dw;
+      camCropCanvas.height = dh;
+      camMaskCanvas.width = dw;
+      camMaskCanvas.height = dh;
       drawCapturedOnCanvas();
 
       // Full-image quad with a tiny inset so handles are visible at edges
-      const p=0.008;
-      quad={tl:{x:dw*p,y:dh*p},tr:{x:dw*(1-p),y:dh*p},bl:{x:dw*p,y:dh*(1-p)},br:{x:dw*(1-p),y:dh*(1-p)}};
-      positionHandles(); drawMask();
+      const p = 0.008;
+      quad = {
+        tl: { x: dw * p, y: dh * p },
+        tr: { x: dw * (1 - p), y: dh * p },
+        bl: { x: dw * p, y: dh * (1 - p) },
+        br: { x: dw * (1 - p), y: dh * (1 - p) }
+      };
+      positionHandles();
+      drawMask();
 
       // Show a toast so user knows auto-crop was applied
-      if(autoDetectPoly){
+      if (autoDetectPoly) {
         toast("Document auto-cropped ✓ — adjust corners if needed", "ok", 2400);
       }
     });
+  }
+
+  function rotateCapturedCanvas(deg = 90) {
+    if (!capturedCanvas) return;
+    const oldW = capturedCanvas.width, oldH = capturedCanvas.height;
+    const rotated = document.createElement("canvas");
+    rotated.width = oldH;
+    rotated.height = oldW;
+    const rctx = rotated.getContext("2d");
+    rctx.translate(rotated.width / 2, rotated.height / 2);
+    rctx.rotate((deg * Math.PI) / 180);
+    rctx.drawImage(capturedCanvas, -oldW / 2, -oldH / 2);
+    capturedCanvas = rotated;
+    showReviewStep(null);
   }
 
   function drawCapturedOnCanvas() {
@@ -3344,9 +3452,46 @@ $("#iscCamera").onclick = () => {
       const ts=new Date().toISOString().replace(/[:.]/g,"-").slice(0,19);
       const file=new File([blob],`scan_${ts}.jpg`,{type:"image/jpeg"});
       closeCameraScanner();
-      await importFiles([file]);
+      if (typeof pendingAddAt !== "undefined" && pendingAddAt >= 0) {
+        showProgress("Adding scanned page…");
+        try {
+          pushHistory();
+          const pg = await importImageFile(file, pendingAddAt);
+          pendingAddAt = -1;
+          hideProgress(); renderGrid(); updateStats(); buildStrip(); switchView();
+          toast("Scanned camera page added", "ok");
+          if (pg) openEditor(pg.id);
+        } catch(err) {
+          hideProgress();
+          loadError(err, file.name);
+        }
+      } else {
+        await importFiles([file]);
+      }
     },"image/jpeg",0.92);
   };
+
+  /* --- Device native camera button --- */
+  if ($("#camNativeBtn")) {
+    $("#camNativeBtn").onclick = () => {
+      closeCameraScanner();
+      openNativeDeviceCamera();
+    };
+  }
+
+  /* --- Rotate captured image in Review step --- */
+  if ($("#camRotate")) {
+    $("#camRotate").onclick = () => {
+      rotateCapturedCanvas(90);
+    };
+  }
+
+  /* --- Reposition review canvas on window resize / orientation change --- */
+  window.addEventListener("resize", () => {
+    if (!camModal.hidden && !camStep2.hidden && capturedCanvas) {
+      showReviewStep(null);
+    }
+  });
 
   /* --- Close camera --- */
   $("#camClose").onclick = closeCameraScanner;
