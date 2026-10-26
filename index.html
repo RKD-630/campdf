@@ -53,6 +53,11 @@
 <symbol id="i-zap" viewBox="0 0 24 24"><polygon fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></symbol>
 <symbol id="i-dots" viewBox="0 0 24 24"><g fill="currentColor"><circle cx="12" cy="5" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="12" cy="19" r="2.2"/></g></symbol>
 <symbol id="i-move" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m5 9-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M12 2v20"/></g></symbol>
+<symbol id="i-camera" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></g></symbol>
+<symbol id="i-gallery" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></g></symbol>
+<symbol id="i-scan" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="3" y1="12" x2="21" y2="12"/></g></symbol>
+<symbol id="i-wand" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 21 9.5-9.5M15 3l6 6M9 9l6-6M6 12l-3 3"/><path d="M18 6l-1.5 1.5M21 3l-1.5 1.5"/></g></symbol>
+<symbol id="i-capture" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5" fill="currentColor" stroke="none"/></g></symbol>
 <symbol id="i-up" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m6 14 6-6 6 6"/></symbol>
 <symbol id="i-down" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m6 10 6 6 6-6"/></symbol>
 </defs></svg>
@@ -483,6 +488,132 @@
 </div></div>
 
 <div id="toasts" role="status" aria-live="polite"></div>
+
+<!-- ================= IMPORT SOURCE MODAL ================= -->
+<div class="modal-bd" id="importSourceModal" hidden="">
+  <div class="modal isc-modal">
+    <div class="isc-header">
+      <div class="isc-title">Import Document</div>
+      <button class="ib sm" id="iscClose" aria-label="Close"><svg><use href="#i-x"/></svg></button>
+    </div>
+    <p class="isc-sub">Choose how you'd like to add your document.</p>
+    <div class="isc-options">
+      <button class="isc-opt" id="iscGallery">
+        <div class="isc-opt-icon">
+          <svg><use href="#i-gallery"/></svg>
+        </div>
+        <div class="isc-opt-info">
+          <strong>Gallery / Files</strong>
+          <span>Pick from your device — PDF, JPG, PNG, WEBP and more</span>
+        </div>
+        <svg class="isc-arrow"><use href="#i-right"/></svg>
+      </button>
+      <button class="isc-opt" id="iscCamera">
+        <div class="isc-opt-icon cam">
+          <svg><use href="#i-camera"/></svg>
+        </div>
+        <div class="isc-opt-info">
+          <strong>Camera</strong>
+          <span>Scan a document with auto-detect &amp; crop</span>
+        </div>
+        <svg class="isc-arrow"><use href="#i-right"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= CAMERA SCANNER MODAL ================= -->
+<div class="modal-bd" id="camModal" hidden="">
+  <div class="cam-shell">
+    <!-- STEP 1: Viewfinder -->
+    <div id="camStep1">
+      <div class="cam-topbar">
+        <button class="ib sm" id="camClose" aria-label="Close camera"><svg><use href="#i-x"/></svg></button>
+        <span class="cam-title">Camera Scanner</span>
+        <button class="ib sm" id="camFlip" title="Flip camera" aria-label="Switch camera"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg></button>
+      </div>
+      <div class="cam-vf-wrap" id="camVfWrap">
+        <video id="camVideo" autoplay muted playsinline></video>
+        <canvas id="camOverlay"></canvas>
+        <div class="cam-corner-guides">
+          <span class="ccg tl"></span><span class="ccg tr"></span>
+          <span class="ccg bl"></span><span class="ccg br"></span>
+        </div>
+        <div class="cam-hint" id="camHint">Point at a document</div>
+      </div>
+      <div class="cam-bottom">
+        <button class="cam-cap-btn" id="camCapture" title="Capture">
+          <svg><use href="#i-capture"/></svg>
+        </button>
+        <span class="cam-cap-label">Tap to capture</span>
+      </div>
+    </div>
+
+    <!-- STEP 2: Review / Crop / Adjust -->
+    <div id="camStep2" hidden="">
+      <div class="cam-topbar">
+        <button class="ib sm" id="camRetake" aria-label="Retake"><svg><use href="#i-left"/></svg> Retake</button>
+        <span class="cam-title">Review &amp; Adjust</span>
+        <button class="btn primary sm" id="camUse" style="min-height:34px;padding:0 14px;font-size:.82rem">Use <svg style="width:14px;height:14px"><use href="#i-check"/></svg></button>
+      </div>
+
+      <!-- crop canvas area -->
+      <div class="cam-review-stage" id="camReviewStage">
+        <canvas id="camCropCanvas"></canvas>
+        <!-- corner handles -->
+        <span class="crop-handle" data-ch="tl" id="crh-tl"></span>
+        <span class="crop-handle" data-ch="tr" id="crh-tr"></span>
+        <span class="crop-handle" data-ch="bl" id="crh-bl"></span>
+        <span class="crop-handle" data-ch="br" id="crh-br"></span>
+        <!-- edge overlays -->
+        <canvas id="camMaskCanvas" style="position:absolute;inset:0;pointer-events:none"></canvas>
+      </div>
+
+      <div class="cam-review-panel">
+        <!-- Tabs -->
+        <div class="cam-tabs">
+          <button class="cam-tab on" data-ctab="crop"><svg><use href="#i-crop"/></svg> Crop</button>
+          <button class="cam-tab" data-ctab="adjust"><svg><use href="#i-sliders"/></svg> Adjust</button>
+        </div>
+
+        <!-- Crop tab -->
+        <div class="cam-panel" data-cpanel="crop">
+          <div class="cam-crop-info" id="camCropInfo">Drag the corners to adjust crop</div>
+          <div class="cam-crop-actions">
+            <button class="btn sm" id="camAutoDetect"><svg><use href="#i-wand"/></svg> Auto Detect</button>
+            <button class="btn sm" id="camFullImg"><svg><use href="#i-fit"/></svg> Full Image</button>
+          </div>
+        </div>
+
+        <!-- Adjust tab -->
+        <div class="cam-panel" data-cpanel="adjust" hidden="">
+          <div class="cam-adj-row">
+            <label>Brightness</label>
+            <div class="cam-adj-slider-wrap">
+              <input type="range" id="camBrightness" min="-100" max="100" value="0" step="1" />
+              <span class="cam-adj-val" id="camBrightnessVal">0</span>
+            </div>
+          </div>
+          <div class="cam-adj-row">
+            <label>Contrast</label>
+            <div class="cam-adj-slider-wrap">
+              <input type="range" id="camContrast" min="-100" max="100" value="0" step="1" />
+              <span class="cam-adj-val" id="camContrastVal">0</span>
+            </div>
+          </div>
+          <div class="cam-adj-row">
+            <label>Darkness</label>
+            <div class="cam-adj-slider-wrap">
+              <input type="range" id="camDarkness" min="0" max="100" value="0" step="1" />
+              <span class="cam-adj-val" id="camDarknessVal">0</span>
+            </div>
+          </div>
+          <button class="btn sm ghost" id="camAdjReset" style="width:100%;margin-top:4px"><svg><use href="#i-reset"/></svg> Reset</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <input type="file" id="importInput" multiple="" hidden="" accept="application/pdf,image/*,.pdf,.jpg,.jpeg,.png,.webp,.gif,.bmp,.tif,.tiff,.svg" />
 <input type="file" id="quickImportInput" multiple="" hidden="" accept=".pdf,application/pdf" />

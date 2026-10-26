@@ -434,8 +434,8 @@ async function importFiles(list, opts = {}) {
 
 $("#importInput").addEventListener("change", e => { importFiles(e.target.files); e.target.value = ""; });
 if ($("#quickImportInput")) $("#quickImportInput").addEventListener("change", e => { importFiles(e.target.files, { isQuickMode: true }); e.target.value = ""; });
-if ($("#btnImport")) $("#btnImport").onclick = () => $("#importInput").click();
-if ($("#heroImport")) $("#heroImport").onclick = () => $("#importInput").click();
+if ($("#btnImport")) $("#btnImport").onclick = openImportSourceModal;
+if ($("#heroImport")) $("#heroImport").onclick = openImportSourceModal;
 if ($("#btnQuickImport")) $("#btnQuickImport").onclick = () => $("#quickImportInput").click();
 if ($("#heroQuickImport")) $("#heroQuickImport").onclick = () => $("#quickImportInput").click();
 let dragDepth=0;
@@ -2887,3 +2887,434 @@ addEventListener("beforeunload",e=>{
   if(state.pages.length){e.preventDefault();e.returnValue="";}
 });
 updateStats(); updateHistoryBtns();
+/* ============ Import Source Modal ============ */
+function openImportSourceModal() {
+  $("#importSourceModal").hidden = false;
+}
+function closeImportSourceModal() {
+  $("#importSourceModal").hidden = true;
+}
+$("#iscClose").onclick = closeImportSourceModal;
+$("#importSourceModal").addEventListener("click", e => {
+  if (e.target === $("#importSourceModal")) closeImportSourceModal();
+});
+$("#iscGallery").onclick = () => {
+  closeImportSourceModal();
+  $("#importInput").click();
+};
+$("#iscCamera").onclick = () => {
+  closeImportSourceModal();
+  openCameraScanner();
+};
+
+/* ============ Camera Scanner ============ */
+(function() {
+  let camStream = null;
+  let capturedCanvas = null;
+  let camFacingMode = "environment";
+  let autoDetectPoly = null;
+  let adjBrightness = 0, adjContrast = 0, adjDarkness = 0;
+  let quad = { tl:{x:0,y:0}, tr:{x:0,y:0}, bl:{x:0,y:0}, br:{x:0,y:0} };
+  let displayW = 0, displayH = 0;
+
+  const camModal = $("#camModal");
+  const camVideo = $("#camVideo");
+  const camOverlay = $("#camOverlay");
+  const camStep1 = $("#camStep1");
+  const camStep2 = $("#camStep2");
+  const camCropCanvas = $("#camCropCanvas");
+  const camMaskCanvas = $("#camMaskCanvas");
+  const camReviewStage = $("#camReviewStage");
+
+  let detectionRafId = null;
+
+  function openCameraScanner() {
+    camModal.hidden = false;
+    camStep1.hidden = false;
+    camStep2.hidden = true;
+    adjBrightness = 0; adjContrast = 0; adjDarkness = 0;
+    resetAdjSliders();
+    startCamera().then(() => startDetectionLoop());
+  }
+  window.openCameraScanner = openCameraScanner;
+
+  async function startCamera() {
+    stopStream();
+    try {
+      camStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: camFacingMode, width:{ideal:1920}, height:{ideal:1080} },
+        audio: false
+      });
+      camVideo.srcObject = camStream;
+      await new Promise(r => { camVideo.onloadedmetadata = r; });
+      camVideo.play();
+      syncOverlay();
+    } catch(e) {
+      closeCameraScanner();
+      toast("Camera not available: " + (e.message || e), "error");
+    }
+  }
+
+  function syncOverlay() {
+    const w = camVideo.videoWidth || camVideo.clientWidth || 640;
+    const h = camVideo.videoHeight || camVideo.clientHeight || 480;
+    camOverlay.width = w;
+    camOverlay.height = h;
+  }
+
+  function stopStream() {
+    if (detectionRafId) { cancelAnimationFrame(detectionRafId); detectionRafId = null; }
+    if (camStream) { camStream.getTracks().forEach(t => t.stop()); camStream = null; }
+    camVideo.srcObject = null;
+  }
+
+  function closeCameraScanner() {
+    stopStream();
+    camModal.hidden = true;
+  }
+
+  /* --- Live edge detection loop --- */
+  function startDetectionLoop() {
+    const ctx = camOverlay.getContext("2d");
+    let smoothQuad = null;
+    const LERP = 0.18;
+
+    const lerp = (a,b,t) => a+(b-a)*t;
+    const lerpPt = (p1,p2,t) => ({x:lerp(p1.x,p2.x,t),y:lerp(p1.y,p2.y,t)});
+    const lerpQuad = (q1,q2,t) => ({
+      tl:lerpPt(q1.tl,q2.tl,t), tr:lerpPt(q1.tr,q2.tr,t),
+      bl:lerpPt(q1.bl,q2.bl,t), br:lerpPt(q1.br,q2.br,t)
+    });
+
+    function tick() {
+      if (!camStream || camVideo.readyState < 2) { detectionRafId = requestAnimationFrame(tick); return; }
+      syncOverlay();
+      const vw = camOverlay.width, vh = camOverlay.height;
+      if (!vw || !vh) { detectionRafId = requestAnimationFrame(tick); return; }
+
+      const off = document.createElement("canvas");
+      const dw = Math.min(320,vw), dh = Math.round(vh*dw/vw);
+      off.width = dw; off.height = dh;
+      const octx = off.getContext("2d");
+      octx.drawImage(camVideo, 0, 0, dw, dh);
+      const detected = detectDocumentQuad(octx, dw, dh);
+
+      const sx = vw/dw, sy = vh/dh;
+      const p = 0.12;
+      const fallback = {
+        tl:{x:vw*p,y:vh*p}, tr:{x:vw*(1-p),y:vh*p},
+        bl:{x:vw*p,y:vh*(1-p)}, br:{x:vw*(1-p),y:vh*(1-p)}
+      };
+      const target = detected ? {
+        tl:{x:detected.tl.x*sx,y:detected.tl.y*sy},
+        tr:{x:detected.tr.x*sx,y:detected.tr.y*sy},
+        bl:{x:detected.bl.x*sx,y:detected.bl.y*sy},
+        br:{x:detected.br.x*sx,y:detected.br.y*sy}
+      } : fallback;
+
+      smoothQuad = smoothQuad ? lerpQuad(smoothQuad, target, LERP) : target;
+      autoDetectPoly = smoothQuad;
+
+      ctx.clearRect(0,0,vw,vh);
+      ctx.strokeStyle = detected ? "rgba(80,220,120,0.95)" : "rgba(255,255,255,0.5)";
+      ctx.lineWidth = 2.5;
+      ctx.shadowColor = detected ? "rgba(40,200,80,0.5)" : "rgba(255,255,255,0.25)";
+      ctx.shadowBlur = 6;
+      ctx.beginPath();
+      ctx.moveTo(smoothQuad.tl.x,smoothQuad.tl.y);
+      ctx.lineTo(smoothQuad.tr.x,smoothQuad.tr.y);
+      ctx.lineTo(smoothQuad.br.x,smoothQuad.br.y);
+      ctx.lineTo(smoothQuad.bl.x,smoothQuad.bl.y);
+      ctx.closePath();
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      const hint = $("#camHint");
+      if(hint) hint.textContent = detected ? "✓ Document detected — Tap to capture" : "Point at a document";
+
+      detectionRafId = requestAnimationFrame(tick);
+    }
+    detectionRafId = requestAnimationFrame(tick);
+  }
+
+  /* --- Sobel-based document quad detection --- */
+  function detectDocumentQuad(ctx, w, h) {
+    const id = ctx.getImageData(0,0,w,h);
+    const d = id.data;
+    const gray = new Uint8Array(w*h);
+    for(let i=0;i<w*h;i++) gray[i] = Math.round(0.299*d[i*4]+0.587*d[i*4+1]+0.114*d[i*4+2]);
+    const edge = new Uint8Array(w*h);
+    for(let y=1;y<h-1;y++){
+      for(let x=1;x<w-1;x++){
+        const gx=-gray[(y-1)*w+x-1]-2*gray[y*w+x-1]-gray[(y+1)*w+x-1]
+                 +gray[(y-1)*w+x+1]+2*gray[y*w+x+1]+gray[(y+1)*w+x+1];
+        const gy=-gray[(y-1)*w+x-1]-2*gray[(y-1)*w+x]-gray[(y-1)*w+x+1]
+                 +gray[(y+1)*w+x-1]+2*gray[(y+1)*w+x]+gray[(y+1)*w+x+1];
+        edge[y*w+x]=Math.min(255,Math.sqrt(gx*gx+gy*gy));
+      }
+    }
+    let minX=w,minY=h,maxX=0,maxY=0,cnt=0;
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+      if(edge[y*w+x]>60){
+        if(x<minX)minX=x;if(x>maxX)maxX=x;if(y<minY)minY=y;if(y>maxY)maxY=y;cnt++;
+      }
+    }
+    const area=(maxX-minX)*(maxY-minY);
+    if(cnt<200||area<w*h*0.06||(maxX-minX)<w*0.2||(maxY-minY)<h*0.2) return null;
+    return {tl:{x:minX+2,y:minY+2},tr:{x:maxX-2,y:minY+2},bl:{x:minX+2,y:maxY-2},br:{x:maxX-2,y:maxY-2}};
+  }
+
+  /* --- Capture --- */
+  function doCapture() {
+    const vw = camVideo.videoWidth||640, vh = camVideo.videoHeight||480;
+    capturedCanvas = document.createElement("canvas");
+    capturedCanvas.width = vw; capturedCanvas.height = vh;
+    capturedCanvas.getContext("2d").drawImage(camVideo,0,0,vw,vh);
+    let q = autoDetectPoly;
+    if(q){
+      const sx=vw/camOverlay.width, sy=vh/camOverlay.height;
+      q={tl:{x:q.tl.x*sx,y:q.tl.y*sy},tr:{x:q.tr.x*sx,y:q.tr.y*sy},
+         bl:{x:q.bl.x*sx,y:q.bl.y*sy},br:{x:q.br.x*sx,y:q.br.y*sy}};
+    }
+    stopStream();
+    showReviewStep(q);
+  }
+
+  /* --- Review step --- */
+  function showReviewStep(detectedQuad) {
+    camStep1.hidden = true;
+    camStep2.hidden = false;
+    activateCamTab("crop");
+
+    // Wait a frame so stage has dimensions
+    requestAnimationFrame(() => {
+      const sw = camReviewStage.clientWidth||400, sh = camReviewStage.clientHeight||300;
+      const ratio = capturedCanvas.width / capturedCanvas.height;
+      let dw,dh;
+      if(ratio > sw/sh){ dw=sw; dh=Math.round(sw/ratio); }
+      else { dh=sh; dw=Math.round(sh*ratio); }
+      dw=Math.max(1,dw); dh=Math.max(1,dh);
+      displayW=dw; displayH=dh;
+      camCropCanvas.width=dw; camCropCanvas.height=dh;
+      camMaskCanvas.width=dw; camMaskCanvas.height=dh;
+      drawCapturedOnCanvas();
+
+      const sx=dw/capturedCanvas.width, sy=dh/capturedCanvas.height;
+      if(detectedQuad){
+        quad={
+          tl:{x:detectedQuad.tl.x*sx,y:detectedQuad.tl.y*sy},
+          tr:{x:detectedQuad.tr.x*sx,y:detectedQuad.tr.y*sy},
+          bl:{x:detectedQuad.bl.x*sx,y:detectedQuad.bl.y*sy},
+          br:{x:detectedQuad.br.x*sx,y:detectedQuad.br.y*sy}
+        };
+      } else {
+        const p=0.05;
+        quad={tl:{x:dw*p,y:dh*p},tr:{x:dw*(1-p),y:dh*p},bl:{x:dw*p,y:dh*(1-p)},br:{x:dw*(1-p),y:dh*(1-p)}};
+      }
+      positionHandles(); drawMask();
+    });
+  }
+
+  function drawCapturedOnCanvas() {
+    if(!capturedCanvas) return;
+    const ctx = camCropCanvas.getContext("2d");
+    const bri = (1+adjBrightness/100)*(1-(adjDarkness/100)*0.72);
+    const con = 1+adjContrast/100;
+    ctx.filter = `brightness(${bri.toFixed(3)}) contrast(${con.toFixed(3)})`;
+    ctx.drawImage(capturedCanvas,0,0,camCropCanvas.width,camCropCanvas.height);
+    ctx.filter = "none";
+  }
+
+  function drawMask() {
+    const ctx = camMaskCanvas.getContext("2d");
+    const w=camMaskCanvas.width, h=camMaskCanvas.height;
+    ctx.clearRect(0,0,w,h);
+    ctx.fillStyle="rgba(0,0,0,0.52)";
+    ctx.fillRect(0,0,w,h);
+    ctx.globalCompositeOperation="destination-out";
+    ctx.beginPath();
+    ctx.moveTo(quad.tl.x,quad.tl.y);
+    ctx.lineTo(quad.tr.x,quad.tr.y);
+    ctx.lineTo(quad.br.x,quad.br.y);
+    ctx.lineTo(quad.bl.x,quad.bl.y);
+    ctx.closePath();
+    ctx.fill();
+    ctx.globalCompositeOperation="source-over";
+    ctx.strokeStyle="rgba(80,220,120,0.95)";
+    ctx.lineWidth=2.5;
+    ctx.beginPath();
+    ctx.moveTo(quad.tl.x,quad.tl.y);
+    ctx.lineTo(quad.tr.x,quad.tr.y);
+    ctx.lineTo(quad.br.x,quad.br.y);
+    ctx.lineTo(quad.bl.x,quad.bl.y);
+    ctx.closePath();
+    ctx.stroke();
+  }
+
+  function positionHandles() {
+    const stageRect = camReviewStage.getBoundingClientRect();
+    const canvRect = camCropCanvas.getBoundingClientRect();
+    const offX = canvRect.left - stageRect.left;
+    const offY = canvRect.top - stageRect.top;
+    ["tl","tr","bl","br"].forEach(k => {
+      const el = document.getElementById("crh-"+k);
+      if(!el) return;
+      el.style.left = (offX+quad[k].x)+"px";
+      el.style.top  = (offY+quad[k].y)+"px";
+    });
+  }
+
+  function setupHandleDrag(el, corner) {
+    let drag=false, sx=0,sy=0,sqx=0,sqy=0;
+    function onStart(e){
+      drag=true;
+      const p=e.touches?e.touches[0]:e;
+      sx=p.clientX; sy=p.clientY; sqx=quad[corner].x; sqy=quad[corner].y;
+      e.preventDefault();
+    }
+    function onMove(e){
+      if(!drag)return;
+      const p=e.touches?e.touches[0]:e;
+      quad[corner].x=clamp(sqx+(p.clientX-sx),0,displayW);
+      quad[corner].y=clamp(sqy+(p.clientY-sy),0,displayH);
+      positionHandles(); drawMask();
+      e.preventDefault();
+    }
+    function onEnd(){ drag=false; }
+    el.addEventListener("mousedown",onStart);
+    el.addEventListener("touchstart",onStart,{passive:false});
+    window.addEventListener("mousemove",onMove);
+    window.addEventListener("touchmove",onMove,{passive:false});
+    window.addEventListener("mouseup",onEnd);
+    window.addEventListener("touchend",onEnd);
+  }
+  ["tl","tr","bl","br"].forEach(k => {
+    const el = document.getElementById("crh-"+k);
+    if(el) setupHandleDrag(el,k);
+  });
+
+  new ResizeObserver(() => { if(!camStep2.hidden) positionHandles(); }).observe(camReviewStage);
+
+  /* --- Auto-detect button --- */
+  $("#camAutoDetect").onclick = () => {
+    const dw=320, dh=Math.round(capturedCanvas.height*320/capturedCanvas.width);
+    const off=document.createElement("canvas");
+    off.width=dw; off.height=dh;
+    const octx=off.getContext("2d");
+    octx.drawImage(capturedCanvas,0,0,dw,dh);
+    const detected=detectDocumentQuad(octx,dw,dh);
+    if(detected){
+      const sx=displayW/dw, sy=displayH/dh;
+      quad={
+        tl:{x:detected.tl.x*sx,y:detected.tl.y*sy},
+        tr:{x:detected.tr.x*sx,y:detected.tr.y*sy},
+        bl:{x:detected.bl.x*sx,y:detected.bl.y*sy},
+        br:{x:detected.br.x*sx,y:detected.br.y*sy}
+      };
+      positionHandles(); drawMask();
+      toast("Document edges detected!", "ok", 1800);
+    } else {
+      toast("Could not auto-detect. Adjust corners manually.", "info", 2400);
+    }
+  };
+
+  $("#camFullImg").onclick = () => {
+    quad={tl:{x:0,y:0},tr:{x:displayW,y:0},bl:{x:0,y:displayH},br:{x:displayW,y:displayH}};
+    positionHandles(); drawMask();
+  };
+
+  /* --- Adjust sliders --- */
+  function resetAdjSliders() {
+    ["camBrightness","camContrast","camDarkness"].forEach(id => {
+      const el=document.getElementById(id); if(el) el.value=0;
+    });
+    const bv=$("#camBrightnessVal"),cv=$("#camContrastVal"),dv=$("#camDarknessVal");
+    if(bv)bv.textContent=0; if(cv)cv.textContent=0; if(dv)dv.textContent=0;
+    adjBrightness=0; adjContrast=0; adjDarkness=0;
+  }
+  $("#camBrightness").addEventListener("input", e => {
+    adjBrightness=+e.target.value;
+    $("#camBrightnessVal").textContent=adjBrightness;
+    if(capturedCanvas){drawCapturedOnCanvas();drawMask();}
+  });
+  $("#camContrast").addEventListener("input", e => {
+    adjContrast=+e.target.value;
+    $("#camContrastVal").textContent=adjContrast;
+    if(capturedCanvas){drawCapturedOnCanvas();drawMask();}
+  });
+  $("#camDarkness").addEventListener("input", e => {
+    adjDarkness=+e.target.value;
+    $("#camDarknessVal").textContent=adjDarkness;
+    if(capturedCanvas){drawCapturedOnCanvas();drawMask();}
+  });
+  $("#camAdjReset").onclick = () => {
+    resetAdjSliders();
+    if(capturedCanvas){drawCapturedOnCanvas();drawMask();}
+  };
+
+  /* --- Tab switcher --- */
+  function activateCamTab(name) {
+    $$(".cam-tab").forEach(t => t.classList.toggle("on", t.dataset.ctab===name));
+    $$(".cam-panel").forEach(p => p.classList.toggle("on", p.dataset.cpanel===name));
+  }
+  $$(".cam-tab").forEach(t => t.addEventListener("click", () => activateCamTab(t.dataset.ctab)));
+
+  /* --- Camera flip --- */
+  $("#camFlip").onclick = async () => {
+    camFacingMode = camFacingMode==="environment"?"user":"environment";
+    if(detectionRafId){cancelAnimationFrame(detectionRafId);detectionRafId=null;}
+    await startCamera();
+    startDetectionLoop();
+  };
+
+  /* --- Capture button --- */
+  $("#camCapture").onclick = doCapture;
+
+  /* --- Retake --- */
+  $("#camRetake").onclick = async () => {
+    camStep2.hidden=true; camStep1.hidden=false;
+    capturedCanvas=null; autoDetectPoly=null;
+    resetAdjSliders();
+    await startCamera();
+    startDetectionLoop();
+  };
+
+  /* --- Use / import --- */
+  $("#camUse").onclick = () => {
+    if(!capturedCanvas) return;
+    const sx=capturedCanvas.width/displayW, sy=capturedCanvas.height/displayH;
+    const cq={
+      tl:{x:quad.tl.x*sx,y:quad.tl.y*sy}, tr:{x:quad.tr.x*sx,y:quad.tr.y*sy},
+      bl:{x:quad.bl.x*sx,y:quad.bl.y*sy}, br:{x:quad.br.x*sx,y:quad.br.y*sy}
+    };
+    const xs=[cq.tl.x,cq.tr.x,cq.bl.x,cq.br.x];
+    const ys=[cq.tl.y,cq.tr.y,cq.bl.y,cq.br.y];
+    const x0=Math.max(0,Math.round(Math.min(...xs)));
+    const y0=Math.max(0,Math.round(Math.min(...ys)));
+    const x1=Math.min(capturedCanvas.width,Math.round(Math.max(...xs)));
+    const y1=Math.min(capturedCanvas.height,Math.round(Math.max(...ys)));
+    const cw=Math.max(1,x1-x0), ch=Math.max(1,y1-y0);
+
+    const out=document.createElement("canvas");
+    out.width=cw; out.height=ch;
+    const octx=out.getContext("2d");
+    const bri=(1+adjBrightness/100)*(1-(adjDarkness/100)*0.72);
+    const con=1+adjContrast/100;
+    octx.filter=`brightness(${bri.toFixed(3)}) contrast(${con.toFixed(3)})`;
+    octx.drawImage(capturedCanvas,x0,y0,cw,ch,0,0,cw,ch);
+    octx.filter="none";
+
+    out.toBlob(async blob => {
+      const ts=new Date().toISOString().replace(/[:.]/g,"-").slice(0,19);
+      const file=new File([blob],`scan_${ts}.jpg`,{type:"image/jpeg"});
+      closeCameraScanner();
+      await importFiles([file]);
+    },"image/jpeg",0.92);
+  };
+
+  /* --- Close camera --- */
+  $("#camClose").onclick = closeCameraScanner;
+  camModal.addEventListener("click", e => {
+    if(e.target===camModal) closeCameraScanner();
+  });
+})();
